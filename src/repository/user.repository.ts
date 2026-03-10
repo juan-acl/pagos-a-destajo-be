@@ -1,6 +1,6 @@
-import { AppDataSource } from "../../config/data-source";
-import { BaseRepository } from "../../shared/base.repository";
-import { UserEntity } from "./user.entity";
+import { AppDataSource } from "../config/data-source";
+import { BaseRepository } from "../shared/base.repository";
+import { UserEntity } from "../entity/user.entity";
 
 export class UserRepository extends BaseRepository<UserEntity> {
   constructor() {

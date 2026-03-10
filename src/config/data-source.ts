@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { env } from "./env";
-import { UserEntity } from "../modules/user/user.entity";
+import { UserEntity } from "../entity/user.entity";
 
 export const AppDataSource = new DataSource({
   type: "oracle",

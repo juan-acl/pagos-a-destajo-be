@@ -1,5 +1,5 @@
 import { CreateUserDtoType, UpdateUserDtoType } from "./user.dto";
-import { UserRepository } from "./user.repository";
+import { UserRepository } from "../../repository/user.repository";
 
 export class UserService {
   private readonly repo = new UserRepository();
