@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { UserController } from "./user.controller";
+import { PositionWorkerController } from "./positionWorker.controller";
 
 const router: Router = Router();
-const ctrl = new UserController();
+const ctrl = new PositionWorkerController();
 
 router.get("/", ctrl.getAll);
 router.get("/:id", ctrl.getById);

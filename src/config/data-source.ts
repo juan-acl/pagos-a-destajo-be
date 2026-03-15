@@ -1,7 +1,8 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { env } from "./env";
-import { UserEntity } from "../entity/user.entity";
+import { Puesto } from "../entity/positionWorker.entity";
+import { PrefixNamingStrategy } from "./nomenclature";
 
 export const AppDataSource = new DataSource({
   type: "oracle",
@@ -16,7 +17,9 @@ export const AppDataSource = new DataSource({
     thin: true,
   },
 
-  entities: [UserEntity],
+  namingStrategy: new PrefixNamingStrategy(),
+
+  entities: [Puesto],
 
   migrations: ["src/migrations/*.ts"],
   migrationsTableName: "typeorm_migrations",
