@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { zStatus } from "../../shared/status";
 
 export const CreatePositionWorkerDto = z.object({
   nombre: z.string().min(1).max(100),
   descripcion: z.string().min(1).max(150),
-  estado: z.enum(["ACTIVO", "INACTIVO"]),
+  estado: zStatus,
 });
 
   export const UpdatePositionWorkerDto = CreatePositionWorkerDto.partial();

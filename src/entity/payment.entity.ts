@@ -1,15 +1,29 @@
-import { Entity, Column } from "typeorm";
+import { Entity, Column, OneToOne, JoinColumn, CreateDateColumn } from "typeorm";
 import { BaseEntity } from "../shared/base.entity";
-import { StatusType, zStatus } from "../shared/status";
+import { PayType, StatusPayType, zPay, zStatusPay } from "../shared/paymentMethods";
 
 @Entity()
 export class Planilla extends BaseEntity {
-  @Column({ type: "varchar", length: 200, nullable: false })
-  nombre: string;
+  // @OneToOne(() => )
+  // @JoinColumn()
+  @Column({ type: "int",  nullable: false })
+  loteProduccionId: number 
 
-  @Column({ type: "varchar", length: 200, nullable: false, unique: true })
+  @Column({ type: "int",  nullable: false })
+  numeroPago: number
+
+  @Column({ type: "float", nullable: false })
+  montoTotal: number
+  
+  @Column({ type: "varchar", length: 200, nullable: false, enum: zPay })
+  metodoPago: PayType
+
+  @Column({ type: "varchar", length: 200, nullable: false})
   descripcion: string;
 
-  @Column({ type: "varchar",length: 50, nullable: false, enum: zStatus })
-  estado: StatusType;
+  @Column({ type: "varchar",length: 50, nullable: false, enum: zStatusPay })
+  estado: StatusPayType;
+
+  @CreateDateColumn()
+  fechaPago: Date
 }
