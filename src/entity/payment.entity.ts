@@ -3,7 +3,7 @@ import { BaseEntity } from "../shared/base.entity";
 import { StatusType, zStatus } from "../shared/status";
 
 @Entity()
-export class Puesto extends BaseEntity {
+export class Planilla extends BaseEntity {
   @Column({ type: "varchar", length: 200, nullable: false })
   nombre: string;
 

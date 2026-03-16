@@ -35,10 +35,14 @@ export class PositionWorkerService {
   async remove(id: number) {
     await this.getById(id);
     return this.repo.delete(id);
-  }1
+  }
 
   getAll() { 
-    return this.repo.findAll()
+    return this.repo.findAll({
+      where: {
+        estado: "ACTIVO"
+      }
+    })
   }
 
 }

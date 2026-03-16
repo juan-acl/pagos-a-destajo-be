@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { env } from "./env";
 import { Puesto } from "../entity/positionWorker.entity";
 import { PrefixNamingStrategy } from "./nomenclature";
+import { Area } from "../entity/area.entity";
 
 export const AppDataSource = new DataSource({
   type: "oracle",
@@ -19,7 +20,7 @@ export const AppDataSource = new DataSource({
 
   namingStrategy: new PrefixNamingStrategy(),
 
-  entities: [Puesto],
+  entities: [Puesto, Area],
 
   migrations: ["src/migrations/*.ts"],
   migrationsTableName: "typeorm_migrations",
