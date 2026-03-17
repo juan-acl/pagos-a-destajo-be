@@ -2,6 +2,9 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { env } from "./env";
 import { UserEntity } from "../entity/user.entity";
+import { EmpleadoEntity } from "../entity/empleado.entity";
+import { CuadrillaEntity } from "../entity/cuadrilla.entity";
+import { MiembroCuadrillaEntity } from "../entity/miembro-cuadrilla.entity";
 
 export const AppDataSource = new DataSource({
   type: "oracle",
@@ -16,7 +19,12 @@ export const AppDataSource = new DataSource({
     thin: true,
   },
 
-  entities: [UserEntity],
+  entities: [
+    UserEntity,
+    EmpleadoEntity,
+    CuadrillaEntity,
+    MiembroCuadrillaEntity,
+  ],
 
   migrations: ["src/migrations/*.ts"],
   migrationsTableName: "typeorm_migrations",
