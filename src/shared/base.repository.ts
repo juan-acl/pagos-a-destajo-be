@@ -6,7 +6,7 @@ import {
 } from "typeorm";
 
 export class BaseRepository<T> {
-  constructor(protected readonly repo: Repository<T>) {}
+  constructor(protected readonly repo: Repository<T>) { }
 
   findAll(options?: FindManyOptions<T>): Promise<T[]> {
     return this.repo.find(options);

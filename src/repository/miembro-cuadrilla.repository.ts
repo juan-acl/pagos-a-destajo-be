@@ -7,17 +7,17 @@ export class MiembroCuadrillaRepository extends BaseRepository<MiembroCuadrillaE
         super(AppDataSource.getRepository(MiembroCuadrillaEntity));
     }
 
-    findByCuadrilla(cuadrillaId: number) {
+    findByCuadrilla(cuaCuadrillaId: number) {
         return this.repo.find({
-            where: { cuadrillaId },
-            relations: ["empleado", "cuadrilla"],
+            where: { cuaCuadrillaId },
+            relations: ["empEmpleado", "cuaCuadrilla"],
         });
     }
 
-    findByEmpleado(empleadoId: number) {
+    findByEmpleado(empEmpleadoId: number) {
         return this.repo.find({
-            where: { empleadoId },
-            relations: ["empleado", "cuadrilla"],
+            where: { empEmpleadoId },
+            relations: ["empEmpleado", "cuaCuadrilla"],
         });
     }
 }

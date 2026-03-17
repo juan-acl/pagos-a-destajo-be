@@ -3,7 +3,7 @@ import { z } from "zod";
 export const CreateCuadrillaDto = z.object({
     nombre: z.string().min(1).max(100),
     codigoCuadrilla: z.string().max(50).nullable().optional(),
-    areaId: z.number().int().positive().nullable().optional(),
+    areArea: z.number().int().positive().nullable().optional(),
     estado: z.string().max(20).optional(),
 });
 

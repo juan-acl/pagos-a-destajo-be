@@ -7,7 +7,7 @@ export class CuadrillaRepository extends BaseRepository<CuadrillaEntity> {
         super(AppDataSource.getRepository(CuadrillaEntity));
     }
 
-    findActivas() {
-        return this.repo.find({ where: { estado: "activo" } });
+    findByName(nombre: string) {
+        return this.repo.findOne({ where: { nombre } });
     }
 }

@@ -7,21 +7,21 @@ import { CuadrillaEntity } from "./cuadrilla.entity";
 export class MiembroCuadrillaEntity extends BaseEntity {
     @ManyToOne(() => EmpleadoEntity)
     @JoinColumn({ name: "EMP_empleado" })
-    empleado: EmpleadoEntity;
+    empEmpleado: EmpleadoEntity;
 
-    @Column({ name: "EMP_empleado", type: "number" })
-    empleadoId: number;
+    @Column({ name: "EMP_empleado", type: "number", nullable: false })
+    empEmpleadoId: number;
 
     @ManyToOne(() => CuadrillaEntity)
     @JoinColumn({ name: "CUA_cuadrilla" })
-    cuadrilla: CuadrillaEntity;
+    cuaCuadrilla: CuadrillaEntity;
 
-    @Column({ name: "CUA_cuadrilla", type: "number" })
-    cuadrillaId: number;
+    @Column({ name: "CUA_cuadrilla", type: "number", nullable: false })
+    cuaCuadrillaId: number;
 
     @Column({ name: "MIC_fecha_ingreso", type: "date", nullable: true })
     fechaIngreso: Date | null;
 
-    @Column({ name: "MIC_estado", type: "varchar", length: 20, default: "activo" })
+    @Column({ name: "MIC_estado", type: "varchar", length: 20, nullable: false, default: "ACTIVO" })
     estado: string;
 }

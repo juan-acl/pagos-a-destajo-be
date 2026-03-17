@@ -6,6 +6,7 @@ const ctrl = new MiembroCuadrillaController();
 
 router.get("/", ctrl.getAll);
 router.get("/cuadrilla/:cuadrillaId", ctrl.getByCuadrilla);
+router.get("/empleado/:empleadoId", ctrl.getByEmpleado);
 router.get("/:id", ctrl.getById);
 router.post("/", ctrl.create);
 router.put("/:id", ctrl.update);

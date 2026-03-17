@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { EmpleadoController } from "./empleado.controller";
+
 const router: Router = Router();
 const ctrl = new EmpleadoController();
 

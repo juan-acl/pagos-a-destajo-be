@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { HttpResponse } from "../../shared/http-response";
+import { NotFoundError } from "../../error/customErrors";
 import { EmpleadoService } from "./empleado.service";
 import { CreateEmpleadoDto, UpdateEmpleadoDto } from "./empleado.dto";
 
@@ -17,7 +18,10 @@ export class EmpleadoController {
         try {
             const data = await this.service.getById(Number(req.params.id));
             HttpResponse.ok(res, data);
-        } catch (e) { next(e); }
+        } catch (e) {
+            if (e instanceof NotFoundError) return HttpResponse.notFound(res, "Verifique el identificador de la búsqueda");
+            next(e);
+        }
     };
 
     create = async (req: Request, res: Response, next: NextFunction) => {

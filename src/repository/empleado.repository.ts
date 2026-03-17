@@ -10,8 +10,4 @@ export class EmpleadoRepository extends BaseRepository<EmpleadoEntity> {
     findByEmail(email: string) {
         return this.repo.findOne({ where: { email } });
     }
-
-    findActivos() {
-        return this.repo.find({ where: { estado: "activo" } });
-    }
 }
