@@ -1,7 +1,10 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { env } from "./env";
-import { UserEntity } from "../entity/user.entity";
+import { PrefixNamingStrategy } from "./nomenclature";
+import { Area } from "../entity/area.entity";
+import { Planilla } from "../entity/payment.entity";
+import { Puesto } from "../entity/positionWorker.entity";
 import { EmpleadoEntity } from "../entity/empleado.entity";
 import { CuadrillaEntity } from "../entity/cuadrilla.entity";
 import { MiembroCuadrillaEntity } from "../entity/miembro-cuadrilla.entity";
@@ -16,7 +19,8 @@ export const AppDataSource = new DataSource({
   extra: {
     thin: true,
   },
-  entities: [UserEntity, EmpleadoEntity, CuadrillaEntity, MiembroCuadrillaEntity],
+  namingStrategy: new PrefixNamingStrategy(),
+  entities: [Area, Planilla, Puesto, EmpleadoEntity, CuadrillaEntity, MiembroCuadrillaEntity],
   migrations: ["src/migrations/*.ts"],
   migrationsTableName: "typeorm_migrations",
   logging: env.DB.LOGGING,
