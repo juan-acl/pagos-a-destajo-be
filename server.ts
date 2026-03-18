@@ -7,7 +7,6 @@ AppDataSource.initialize()
     console.log("Conectado a Oracle 21c");
 
     app.listen(env.PORT, () => {
-      console.log(`Servidor corriendo en http://localhost:${env.PORT}`);
       console.log(`   Modo: ${env.NODE_ENV}`);
       console.log(
         `   DB:   ${env.DB.HOST}:${env.DB.PORT}/${env.DB.SERVICE_NAME}`,

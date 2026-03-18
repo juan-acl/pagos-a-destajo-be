@@ -6,8 +6,6 @@ import {
 } from "typeorm";
 
 export abstract class BaseEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
 
   @CreateDateColumn()
   fecha_creacion: Date;

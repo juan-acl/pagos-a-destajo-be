@@ -16,6 +16,10 @@ export const HttpResponse = {
   badRequest(res: Response, message = "Datos inválidos", errors?: any) {
     return res.status(400).json({ success: false, message, errors });
   },
+  
+  conflictException(res: Response, message = "Recurso existente", errors?: any) {
+    return res.status(204).json({ success: false, message, errors });
+  },
 
   serverError(res: Response, message = "Error interno del servidor") {
     return res.status(500).json({ success: false, message, data: null });

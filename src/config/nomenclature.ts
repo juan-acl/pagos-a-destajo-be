@@ -4,54 +4,65 @@ export const PrefixNamingStrategy = class
   extends DefaultNamingStrategy
   implements NamingStrategyInterface
 {
-   readonly DB_PREFIX = "DES";
-   currentTablePrefix = "";
+  readonly DB_PREFIX = "DES";
 
-   readonly TABLE_PREFIXES: Record<string, string> = {
-    PUESTO:                       "PST",
-    AREA:                         "ARE",
-    EMPLEADO:                     "EMP",
-    CUADRILLA:                    "CUA",
-    MIEMBRO_CUADRILLA:            "MIC",
-    ORDEN_TRABAJO:                "ODT",
-    ASIGNACION_ORDEN_CUADRILLA:   "TAC",
-    ASIGNACION_EMPLEADO:          "ASE",
-    LOTE_PRODUCCION:              "LTP",
-    REVISION_PRODUCCION:          "RVP",
-    PAGO_PLANILLA:                "PGP",
-    MEDIDAS:                      "MED",
+  readonly TABLE_PREFIXES: Record<string, string> = {
+    PUESTO:                     "PST",
+    AREA:                       "ARE",
+    EMPLEADO:                   "EMP",
+    CUADRILLA:                  "CUA",
+    MIEMBRO_CUADRILLA:          "MIC",
+    ORDEN_TRABAJO:              "ODT",
+    ASIGNACION_ORDEN_CUADRILLA: "TAC",
+    ASIGNACION_EMPLEADO:        "ASE",
+    LOTE_PRODUCCION:            "LTP",
+    REVISION_PRODUCCION:        "RVP",
+    PAGO_PLANILLA:              "PGP",
+    MEDIDAS:                    "MED",
   };
+   classPrefixMap = new Map<string, string>();
+  currentTargetName?: string;
 
-   toSnakeUpper(str: string): string {
+  toSnakeUpper(str: string): string {
     return str
       .replace(/([A-Z])/g, "_$1")
       .toUpperCase()
       .replace(/^_/, "");
   }
 
-   extractTablePrefix(tableName: string): string {
+  extractTablePrefix(tableName: string): string {
     const withoutDB = tableName.replace(/^DES_/, "");
     return this.TABLE_PREFIXES[withoutDB] ?? withoutDB.substring(0, 3);
   }
 
   tableName(targetName: string, userSpecifiedName: string | undefined): string {
+    const snake = this.toSnakeUpper(targetName);
+    const prefix = this.TABLE_PREFIXES[snake] ?? snake.substring(0, 3);
+    this.classPrefixMap.set(targetName, prefix);
+    this.currentTargetName = targetName;
+
     if (userSpecifiedName) {
-      this.currentTablePrefix = this.extractTablePrefix(userSpecifiedName);
+      this.classPrefixMap.set(targetName, this.extractTablePrefix(userSpecifiedName));
       return userSpecifiedName;
     }
-    const snake = this.toSnakeUpper(targetName);
-    this.currentTablePrefix = this.TABLE_PREFIXES[snake] ?? snake.substring(0, 3);
+
     return `${this.DB_PREFIX}_${snake}`;
   }
 
   columnName(
     propertyName: string,
     customName: string | undefined,
-    _embeddedPrefixes: string[]
+    embeddedPrefixes: string[]
   ): string {
     if (customName) return customName;
     const col = this.toSnakeUpper(propertyName);
-    return `${this.currentTablePrefix}_${col}`;
+
+    const className = embeddedPrefixes[0] ?? this.currentTargetName;
+    const prefix = className
+      ? (this.classPrefixMap.get(className) ?? this.extractTablePrefix(className))
+      : "UNK";
+
+    return `${prefix}_${col}`;
   }
 
   primaryKeyName(tableOrName: Table | string, columnNames: string[]): string {
@@ -61,14 +72,12 @@ export const PrefixNamingStrategy = class
 
   uniqueConstraintName(tableOrName: Table | string, columnNames: string[]): string {
     const table = tableOrName instanceof Table ? tableOrName.name : tableOrName;
-    const cols = columnNames.join("_");
-    return `UQ_${table}_${cols}`;
+    return `UQ_${table}_${columnNames.join("_")}`;
   }
 
   relationConstraintName(tableOrName: Table | string, columnNames: string[]): string {
     const table = tableOrName instanceof Table ? tableOrName.name : tableOrName;
-    const cols = columnNames.join("_");
-    return `REL_${table}_${cols}`;
+    return `REL_${table}_${columnNames.join("_")}`;
   }
 
   foreignKeyName(
@@ -78,19 +87,12 @@ export const PrefixNamingStrategy = class
     _referencedColumnNames?: string[]
   ): string {
     const table = tableOrName instanceof Table ? tableOrName.name : tableOrName;
-    const cols = columnNames.join("_");
-    return `FK_${table}_${cols}`;
+    return `FK_${table}_${columnNames.join("_")}`;
   }
 
   indexName(tableOrName: Table | string, columnNames: string[]): string {
     const table = tableOrName instanceof Table ? tableOrName.name : tableOrName;
-    const cols = columnNames.join("_");
-    return `IDX_${table}_${cols}`;
-  }
-
-  checkConstraintName(tableOrName: Table | string, expression: string): string {
-    const table = tableOrName instanceof Table ? tableOrName.name : tableOrName;
-    return `CHK_${table}_${expression.substring(0, 20).replace(/\s/g, "_")}`;
+    return `IDX_${table}_${columnNames.join("_")}`;
   }
 
   joinColumnName(relationName: string, referencedColumnName: string): string {
@@ -101,7 +103,7 @@ export const PrefixNamingStrategy = class
   joinTableName(
     firstTableName: string,
     secondTableName: string,
-    firstPropertyName: string,
+    _firstPropertyName: string,
     _secondPropertyName: string
   ): string {
     return `${firstTableName}_${secondTableName}`;
@@ -117,8 +119,7 @@ export const PrefixNamingStrategy = class
   }
 
    getTableName(tableOrName: Table | string): string {
-    if(tableOrName instanceof Table) return tableOrName.name;
-    return tableOrName.substring(0, 3).toUpperCase();
+    return tableOrName.toString()
   }
 
 };

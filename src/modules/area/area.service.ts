@@ -1,4 +1,4 @@
-import { NotFoundError } from "../../error/customErrors";
+import { ConflictException, NotFoundError } from "../../error/customErrors";
 import { AreaRepository } from "../../repository/area.repository";
 import { CreateAreaDtoType, UpdateAreaDtoType } from "./area.dto";
 
@@ -13,7 +13,7 @@ export class AreaService {
 
   async create(dto: CreateAreaDtoType) {
     const exists = await this.repo.findByName(dto.nombre);
-    if (exists) throw new Error("El area ya está registrado");
+    if (exists) throw new ConflictException("El area ya está registrado");
 
     const newArea = this.repo.create({
       nombre: dto.nombre,

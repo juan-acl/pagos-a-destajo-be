@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { HttpResponse } from "../../shared/http-response";
-import { NotFoundError } from "../../error/customErrors";
+import { ConflictException, NotFoundError } from "../../error/customErrors";
 import { AreaService } from "./area.service";
 import { CreateAreaDto, UpdateAreaDto } from "./area.dto";
 
@@ -32,6 +32,7 @@ export class AreaController {
       const data = await this.service.create(dto);
       HttpResponse.created(res, data);
     } catch (e) {
+      if(e instanceof ConflictException)return HttpResponse.conflictException(res, e.message);
       next(e);
     }
   };

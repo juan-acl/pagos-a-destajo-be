@@ -15,3 +15,9 @@ export class AppError extends Error {
       super(message, 404);
     }
   }
+
+  export class ConflictException extends AppError {
+    constructor(message: string = "Resource existente") {
+      super(message, 204);
+    }
+  }
