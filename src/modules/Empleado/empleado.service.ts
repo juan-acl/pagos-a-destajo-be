@@ -18,21 +18,32 @@ export class EmpleadoService {
     async create(dto: CreateEmpleadoDtoType) {
         const existe = await this.repo.findByEmail(dto.email);
         if (existe) throw new Error("El email ya está registrado");
-        const nuevo = this.repo.create(dto);
+        const nuevo = this.repo.create({
+            primerNombre: dto.primerNombre,
+            segundoNombre: dto.segundoNombre ?? null,
+            primerApellido: dto.primerApellido,
+            segundoApellido: dto.segundoApellido ?? null,
+            email: dto.email,
+            password: dto.password,
+            codigoEmpleado: dto.codigoEmpleado ?? null,
+            pstPuesto: dto.pstPuesto ?? null,
+            estado: dto.estado ?? "ACTIVO",
+        });
         return this.repo.save(nuevo);
     }
 
     async update(id: number, dto: UpdateEmpleadoDtoType) {
         await this.getById(id);
         return this.repo.update(id, {
-            ...(dto.primerNombre && { primerNombre: dto.primerNombre }),
-            ...(dto.segundoNombre && { segundoNombre: dto.segundoNombre }),
-            ...(dto.primerApellido && { primerApellido: dto.primerApellido }),
-            ...(dto.segundoApellido && { segundoApellido: dto.segundoApellido }),
-            ...(dto.email && { email: dto.email }),
-            ...(dto.codigoEmpleado && { codigoEmpleado: dto.codigoEmpleado }),
-            ...(dto.pstPuesto && { pstPuesto: dto.pstPuesto }),
-            ...(dto.estado && { estado: dto.estado }),
+            ...(dto.primerNombre !== undefined && { primerNombre: dto.primerNombre }),
+            ...(dto.segundoNombre !== undefined && { segundoNombre: dto.segundoNombre }),
+            ...(dto.primerApellido !== undefined && { primerApellido: dto.primerApellido }),
+            ...(dto.segundoApellido !== undefined && { segundoApellido: dto.segundoApellido }),
+            ...(dto.email !== undefined && { email: dto.email }),
+            ...(dto.password !== undefined && dto.password !== "" && { password: dto.password }),
+            ...(dto.codigoEmpleado !== undefined && { codigoEmpleado: dto.codigoEmpleado }),
+            ...(dto.pstPuesto !== undefined && { pstPuesto: dto.pstPuesto }),
+            ...(dto.estado !== undefined && { estado: dto.estado }),
         });
     }
 

@@ -12,7 +12,9 @@ export const CreateEmpleadoDto = z.object({
   estado: z.string().max(20).optional(),
 });
 
-export const UpdateEmpleadoDto = CreateEmpleadoDto.partial();
+export const UpdateEmpleadoDto = CreateEmpleadoDto.partial().extend({
+  password: z.string().min(6).max(255).optional().or(z.literal("")),
+});
 
 export type CreateEmpleadoDtoType = z.infer<typeof CreateEmpleadoDto>;
 export type UpdateEmpleadoDtoType = z.infer<typeof UpdateEmpleadoDto>;

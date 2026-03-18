@@ -1,17 +1,31 @@
-import { Entity, Column } from "typeorm";
-import { BaseEntity } from "../shared/base.entity";
+import {
+    Entity, Column, PrimaryGeneratedColumn,
+    CreateDateColumn, UpdateDateColumn, DeleteDateColumn
+} from "typeorm";
 
-@Entity("PRD_CUADRILLA")
-export class CuadrillaEntity extends BaseEntity {
-    @Column({ name: "ARE_area", type: "number", nullable: true })
-    areArea: number | null;
+@Entity("DES_CUADRILLA")
+export class CuadrillaEntity {
+    @PrimaryGeneratedColumn({ name: "CUA_ID" })
+    id: number;
 
-    @Column({ name: "CUA_codigo_cuadrilla", type: "varchar", length: 50, nullable: true })
+    @Column({ name: "CUA_AREA_ID", type: "number", nullable: true })
+    areaId: number | null;
+
+    @Column({ name: "CUA_CODIGO_CUADRILLA", type: "varchar", length: 50, nullable: true })
     codigoCuadrilla: string | null;
 
-    @Column({ name: "CUA_nombre", type: "varchar", length: 100, nullable: false })
+    @Column({ name: "CUA_NOMBRE", type: "varchar", length: 100, nullable: false })
     nombre: string;
 
-    @Column({ name: "CUA_estado", type: "varchar", length: 20, nullable: false, default: "ACTIVO" })
+    @Column({ name: "CUA_ESTADO", type: "varchar", length: 20, nullable: false, default: "ACTIVO" })
     estado: string;
+
+    @CreateDateColumn({ name: "CUA_FECHA_CREACION" })
+    createdAt: Date;
+
+    @UpdateDateColumn({ name: "CUA_FECHA_ACTUALIZACION" })
+    updatedAt: Date;
+
+    @DeleteDateColumn({ name: "CUA_FECHA_ELIMINACION", nullable: true })
+    deletedAt: Date | null;
 }

@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const CreateMiembroDto = z.object({
-    empEmpleadoId: z.number().int().positive(),
-    cuaCuadrillaId: z.number().int().positive(),
-    fechaIngreso: z.string().datetime().nullable().optional(),
+    empleadoId: z.coerce.number().int().positive(),
+    cuadrillaId: z.coerce.number().int().positive(),
+    fechaIngreso: z.string().nullable().optional(),
     estado: z.string().max(20).optional(),
 });
 

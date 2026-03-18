@@ -15,12 +15,12 @@ export class MiembroCuadrillaService {
         return miembro;
     }
 
-    async getByCuadrilla(cuaCuadrillaId: number) {
-        return this.repo.findByCuadrilla(cuaCuadrillaId);
+    async getByCuadrilla(cuadrillaId: number) {
+        return this.repo.findByCuadrilla(cuadrillaId);
     }
 
-    async getByEmpleado(empEmpleadoId: number) {
-        return this.repo.findByEmpleado(empEmpleadoId);
+    async getByEmpleado(empleadoId: number) {
+        return this.repo.findByEmpleado(empleadoId);
     }
 
     async create(dto: CreateMiembroDtoType) {
@@ -34,8 +34,8 @@ export class MiembroCuadrillaService {
     async update(id: number, dto: UpdateMiembroDtoType) {
         await this.getById(id);
         return this.repo.update(id, {
-            ...(dto.empEmpleadoId && { empEmpleadoId: dto.empEmpleadoId }),
-            ...(dto.cuaCuadrillaId && { cuaCuadrillaId: dto.cuaCuadrillaId }),
+            ...(dto.empleadoId && { empleadoId: dto.empleadoId }),
+            ...(dto.cuadrillaId && { cuadrillaId: dto.cuadrillaId }),
             ...(dto.fechaIngreso && { fechaIngreso: new Date(dto.fechaIngreso) }),
             ...(dto.estado && { estado: dto.estado }),
         });

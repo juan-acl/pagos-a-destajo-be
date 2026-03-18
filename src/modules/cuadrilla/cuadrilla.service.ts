@@ -27,7 +27,7 @@ export class CuadrillaService {
         return this.repo.update(id, {
             ...(dto.nombre && { nombre: dto.nombre }),
             ...(dto.codigoCuadrilla && { codigoCuadrilla: dto.codigoCuadrilla }),
-            ...(dto.areArea && { areArea: dto.areArea }),
+            ...(dto.areaId && { areaId: dto.areaId }),
             ...(dto.estado && { estado: dto.estado }),
         });
     }
