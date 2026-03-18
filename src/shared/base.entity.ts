@@ -16,5 +16,5 @@ export abstract class BaseEntity {
   fecha_actualizacion: Date;
 
   @DeleteDateColumn()
-  fecha_eliminacion: Date;
+  fechaEliminacion: Date;
 }

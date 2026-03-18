@@ -5,6 +5,9 @@ import { Puesto } from "../entity/positionWorker.entity";
 import { PrefixNamingStrategy } from "./nomenclature";
 import { Area } from "../entity/area.entity";
 import { Planilla } from "../entity/payment.entity";
+import { AsignacionEmpleado } from "../entity/employeeAssignment.entity";
+import { LoteProduccion } from "../entity/productionLot.entity";
+import { RevisionProduccion } from "../entity/productionReview.entity";
 
 export const AppDataSource = new DataSource({
   type: "oracle",
@@ -21,7 +24,7 @@ export const AppDataSource = new DataSource({
 
   namingStrategy: new PrefixNamingStrategy(),
 
-  entities: [Puesto, Area, Planilla],
+  entities: [Puesto, Area, Planilla, AsignacionEmpleado, LoteProduccion, RevisionProduccion],
 
   migrations: ["src/migrations/*.ts"],
   migrationsTableName: "typeorm_migrations",
