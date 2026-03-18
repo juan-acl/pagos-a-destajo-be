@@ -1,6 +1,7 @@
+import { LoteProduccion } from "../../entity/productionLot.entity";
 import { NotFoundError } from "../../error/customErrors";
-import { PlanillaRepository } from "../../repository/payment.repository";
-import { CreatePaymentDtoType, UpdatePaymentDtoType } from "./payment.dto";
+import { PlanillaRepository } from "../../repository/pagoPlanilla.repository";
+import { CreatePaymentDtoType, UpdatePaymentDtoType } from "./pagoPlanilla.dto";
 
 export class PaymentService {
   private readonly repo = new PlanillaRepository();
@@ -10,9 +11,7 @@ export class PaymentService {
         where: {
             id,
         },
-        relations: {
-            // lote: true
-        }
+        relations: {"loteProduccion": true}
     });
     if (!planilla) throw new NotFoundError("Planilla no encontrada");
     return planilla;
@@ -22,7 +21,7 @@ export class PaymentService {
 
     const newArea = this.repo.create({
         descripcion: dto.descripcion,
-        loteProduccionId: dto.loteProduccionId,
+        loteProduccion: { id: dto.loteProduccionId },
         metodoPago: dto.metodoPago,
         montoTotal: dto.montoTotal,
         numeroPago: dto.numeroPago,
@@ -32,17 +31,17 @@ export class PaymentService {
   }
 
   async update(id: number, dto: UpdatePaymentDtoType) {
-    await this.getById(id);
-    return this.repo.update(id, {
-      ...(dto.descripcion && { descripcion: dto.descripcion }),
-      ...(dto.loteProduccionId && { loteProduccionId: dto.loteProduccionId }),
-      ...(dto.metodoPago && { metodoPago: dto.metodoPago }),
-      ...(dto.montoTotal && { montoTotal: dto.montoTotal }),
-      ...(dto.numeroPago && { numeroPago: dto.numeroPago }),
-      ...(dto.estado && { estado: dto.estado }),
-    });
+    const planilla = await this.getById(id); // debe retornar la entity completa
+  
+    if (dto.descripcion)      planilla.descripcion = dto.descripcion;
+    if (dto.metodoPago)       planilla.metodoPago  = dto.metodoPago;
+    if (dto.montoTotal)       planilla.montoTotal  = dto.montoTotal;
+    if (dto.numeroPago)       planilla.numeroPago  = dto.numeroPago;
+    if (dto.estado)           planilla.estado      = dto.estado;
+    if (dto.loteProduccionId) planilla.loteProduccion = { id: dto.loteProduccionId } as LoteProduccion;
+  
+    return this.repo.save(planilla);
   }
-
   async remove(id: number) {
     await this.getById(id);
     return this.repo.update(id, {

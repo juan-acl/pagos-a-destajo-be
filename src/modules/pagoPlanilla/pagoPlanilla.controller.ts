@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { HttpResponse } from "../../shared/http-response";
 import { NotFoundError } from "../../error/customErrors";
-import { PaymentService } from "./payment.service";
-import { CreatePaymentDto, UpdatePaymentDto } from "./payment.dto";
+import { PaymentService } from "./pagoPlanilla.service";
+import { CreatePaymentDto, UpdatePaymentDto } from "./pagoPlanilla.dto";
 
 export class PaymentController {
   private readonly service = new PaymentService();

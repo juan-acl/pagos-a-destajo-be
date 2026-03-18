@@ -3,7 +3,7 @@ import express, { Application } from "express";
 import { errorMiddleware } from "./src/middlewares/error.middleware";
 import positionWorkerRoutes from "./src/modules/positionWorker/positionWorker.routes";
 import areaRoutes from "./src/modules/area/area.routes";
-import paymentRoutes from "./src/modules/payment/payment.routes";
+import paymentRoutes from "./src/modules/pagoPlanilla/pagoPlanilla.routes";
 import employeeAssignmentRoutes from "./src/modules/employeeAssignment/employeeAssignment.routes";
 import productionLotRoutes from "./src/modules/productionLot/productionLot.routes";
 import productionReviewRoutes from "./src/modules/productionReview/productionReview.routes";

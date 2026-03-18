@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { PaymentController } from "./payment.controller";
+import { PaymentController } from "./pagoPlanilla.controller";
 
 const router: Router = Router();
 const ctrl = new PaymentController();
