@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import express, { Application } from "express";
+import cors from "cors";
 import userRoutes from "./src/modules/user/user.routes";
 import medidaRoutes from "./src/modules/medidas/medidas.routes";
 import ordenTrabajoRoutes from "./src/modules/orden-trabajo/orden-trabajo.routes";
@@ -8,6 +9,12 @@ import { errorMiddleware } from "./src/middlewares/error.middleware";
 
 const app: Application = express();
 const API_PREFIX = "/api";
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

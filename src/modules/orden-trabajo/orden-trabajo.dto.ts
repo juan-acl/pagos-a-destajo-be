@@ -5,7 +5,7 @@ export const CreateOrdenTrabajoDto = z.object({
   cantidadRequerida: z.number().int().positive(),
   medidaId: z.number().int().positive().nullable().optional(),
   pagoUnitario: z.number().positive(),
-  fechaLimite: z.string().datetime().nullable().optional(),
+  fechaLimite: z.string().nullable().optional(),
   estado: z.string().max(50).optional(),
 });
 

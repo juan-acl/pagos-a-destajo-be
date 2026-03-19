@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const CreateAsignacionOrdenCuadrillaDto = z.object({
-  ordenTrabajoId: z.number().int().positive(),
-  cuadrillaId: z.number().int().positive(),
+  ordenTrabajoId: z.number().int().min(0),
+  cuadrillaId: z.number().int().min(0),
   cantidadAsignada: z.number().int().positive(),
   estado: z.string().max(50).optional(),
 });
