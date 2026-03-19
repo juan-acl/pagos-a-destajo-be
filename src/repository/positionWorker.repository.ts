@@ -1,5 +1,5 @@
 import { AppDataSource } from "../config/data-source";
-import { Puesto } from "../entity/positionWorker.entity";
+import { Puesto } from "../entity/puesto.entity";
 import { BaseRepository } from "../shared/base.repository";
 
 export class PositionWorkerRepository extends BaseRepository<Puesto> {
