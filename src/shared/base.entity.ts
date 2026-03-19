@@ -1,20 +1,20 @@
 import {
   CreateDateColumn,
   UpdateDateColumn,
-  PrimaryGeneratedColumn,
   DeleteDateColumn,
+  PrimaryGeneratedColumn,
 } from "typeorm";
 
 export abstract class BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @CreateDateColumn()
-  fecha_creacion: Date;
+  @CreateDateColumn({ name: "fecha_creacion" })
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  fecha_actualizacion: Date;
+  @UpdateDateColumn({ name: "fecha_actualizacion" })
+  updatedAt: Date;
 
-  @DeleteDateColumn()
-  fechaEliminacion: Date;
+  @DeleteDateColumn({ name: "fecha_eliminacion", nullable: true })
+  deletedAt: Date | null;
 }

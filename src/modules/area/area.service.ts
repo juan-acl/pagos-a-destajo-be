@@ -35,16 +35,16 @@ export class AreaService {
   async remove(id: number) {
     await this.getById(id);
     return this.repo.update(id, {
-      estado: "INACTIVO"
-    })
+      estado: "INACTIVO",
+      fechaEliminacion: new Date(),
+    });
   }
 
-  getAll() { 
+  getAll() {
     return this.repo.findAll({
       where: {
-        estado: "ACTIVO"
-      }
-    })
+        estado: "ACTIVO",
+      },
+    });
   }
-
 }
