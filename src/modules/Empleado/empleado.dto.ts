@@ -8,7 +8,7 @@ export const CreateEmpleadoDto = z.object({
   email: z.string().email().max(150),
   password: z.string().min(6).max(255),
   codigoEmpleado: z.string().max(50).nullable().optional(),
-  pstPuesto: z.number().int().positive().nullable().optional(),
+  pstPuesto: z.coerce.number().int().positive().nullable().optional(),
   estado: z.string().max(20).optional(),
 });
 
