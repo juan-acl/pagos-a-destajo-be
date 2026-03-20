@@ -51,6 +51,8 @@ export class PaymentService {
   }
 
   getAll() {
-    return this.repo.findAll({});
+    return this.repo.findAll({
+      relations: { loteProduccion: true },
+    });
   }
 }
