@@ -6,7 +6,7 @@ export class MiembroCuadrillaService {
     private readonly repo = new MiembroCuadrillaRepository();
 
     async getAll() {
-        return this.repo.findAll({ where: { estado: "ACTIVO" } });
+        return this.repo.findAll();
     }
 
     async getById(id: number) {
@@ -26,7 +26,7 @@ export class MiembroCuadrillaService {
     async create(dto: CreateMiembroDtoType) {
         const nuevo = this.repo.create({
             ...dto,
-            fechaIngreso: dto.fechaIngreso ? new Date(dto.fechaIngreso) : null,
+            fechaIngreso: dto.fechaIngreso ? new Date(dto.fechaIngreso + "T12:00:00") : null,
         });
         return this.repo.save(nuevo);
     }
@@ -36,7 +36,9 @@ export class MiembroCuadrillaService {
         return this.repo.update(id, {
             ...(dto.empleadoId && { empleadoId: dto.empleadoId }),
             ...(dto.cuadrillaId && { cuadrillaId: dto.cuadrillaId }),
-            ...(dto.fechaIngreso && { fechaIngreso: new Date(dto.fechaIngreso) }),
+            ...(dto.fechaIngreso !== undefined && {
+                fechaIngreso: dto.fechaIngreso ? new Date(dto.fechaIngreso + "T12:00:00") : null
+            }),
             ...(dto.estado && { estado: dto.estado }),
         });
     }
