@@ -35,12 +35,12 @@ export class EmpleadoEntity {
     @Column({ name: "EMP_ESTADO", type: "varchar", length: 20, nullable: false, default: "ACTIVO" })
     estado: string;
 
-    @CreateDateColumn({ name: "EMP_FECHA_CREACION" })
+    @CreateDateColumn({ name: "EMP_FECHA_CREACION", type: "timestamp" })
     createdAt: Date;
 
-    @UpdateDateColumn({ name: "EMP_FECHA_ACTUALIZACION" })
+    @UpdateDateColumn({ name: "EMP_FECHA_ACTUALIZACION", type: "timestamp" })
     updatedAt: Date;
 
-    @DeleteDateColumn({ name: "EMP_FECHA_ELIMINACION", nullable: true })
+    @DeleteDateColumn({ name: "EMP_FECHA_ELIMINACION", type: "timestamp", nullable: true })
     deletedAt: Date | null;
 }
