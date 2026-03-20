@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const zPay = z.enum(["CONTADO"]);
+export const zPay = z.enum(["EFECTIVO", "TRANSFERENCIA", "CHEQUE", "OTRO"]);
 export type PayType = z.infer<typeof zPay>;
 
 export const zStatusPay = z.enum([
