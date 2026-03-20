@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { env } from "./env";
-import { UserEntity } from "../entity/user.entity";
 import { MedidaEntity } from "../entity/medidas.entity";
 import { OrdenTrabajoEntity } from "../entity/orden-trabajo.entity";
 import { AsignacionOrdenCuadrillaEntity } from "../entity/asignacion-orden-cuadrilla.entity";
@@ -32,7 +31,6 @@ export const AppDataSource = new DataSource({
   namingStrategy: new PrefixNamingStrategy(),
 
   entities: [
-    UserEntity,
     MedidaEntity,
     OrdenTrabajoEntity,
     AsignacionOrdenCuadrillaEntity,
