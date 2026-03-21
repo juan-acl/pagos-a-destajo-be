@@ -5,6 +5,7 @@ import {
   CreateProductionReviewDtoType,
   UpdateProductionReviewDtoType,
 } from "./productionReview.dto";
+import { AsignacionEmpleado } from "../../entity/employeeAssignment.entity";
 
 export class ProductionReviewService {
   private readonly repo = new RevisionProduccionRepository();
@@ -13,11 +14,12 @@ export class ProductionReviewService {
     const revision = await this.repo.findOne({
       where: {
         id,
-        fechaEliminacion: IsNull(),
+        fecha_eliminacion: IsNull(),
       } as any,
     });
 
-    if (!revision) throw new NotFoundError("Revisión de producción no encontrada");
+    if (!revision)
+      throw new NotFoundError("Revisión de producción no encontrada");
     return revision;
   }
 
@@ -28,46 +30,45 @@ export class ProductionReviewService {
       estadoRevision: dto.estadoRevision,
       observaciones: dto.observaciones,
       fechaRevision: dto.fechaRevision,
-      asignacionEmpleadoId: dto.asignacionEmpleadoId,
+      asignacionEmpleadoId: { id: dto.asignacionEmpleadoId },
     });
 
     return await this.repo.save(newReview);
   }
 
   async update(id: number, dto: UpdateProductionReviewDtoType) {
-    await this.getById(id);
+    const currentRevision = await this.getById(id);
 
-    return this.repo.update(id, {
-      ...(dto.cantidadRecibida !== undefined && {
-        cantidadRecibida: dto.cantidadRecibida,
-      }),
-      ...(dto.cantidadAprobada !== undefined && {
-        cantidadAprobada: dto.cantidadAprobada,
-      }),
-      ...(dto.estadoRevision !== undefined && {
-        estadoRevision: dto.estadoRevision,
-      }),
-      ...(dto.observaciones !== undefined && { observaciones: dto.observaciones }),
-      ...(dto.fechaRevision !== undefined && { fechaRevision: dto.fechaRevision }),
-      ...(dto.asignacionEmpleadoId !== undefined && {
-        asignacionEmpleadoId: dto.asignacionEmpleadoId,
-      }),
-    });
+    if (dto.asignacionEmpleadoId)
+      currentRevision.asignacionEmpleadoId = {
+        id: dto.asignacionEmpleadoId,
+      } as AsignacionEmpleado;
+    if (dto.cantidadRecibida)
+      currentRevision.cantidadRecibida = dto.cantidadRecibida;
+    if (dto.cantidadAprobada)
+      currentRevision.cantidadAprobada = dto.cantidadAprobada;
+    if (dto.estadoRevision) currentRevision.estadoRevision = dto.estadoRevision;
+    if (dto.observaciones) currentRevision.observaciones = dto.observaciones;
+    if (dto.fechaRevision) currentRevision.fechaRevision = dto.fechaRevision;
+    currentRevision.fecha_eliminacion = null;
+
+    return this.repo.save(currentRevision);
   }
 
   async remove(id: number) {
     await this.getById(id);
 
     return this.repo.update(id, {
-      fechaEliminacion: new Date(),
+      fecha_eliminacion: new Date(),
     } as any);
   }
 
   getAll() {
     return this.repo.findAll({
+      relations: { asignacionEmpleadoId: true },
       where: {
-        fechaEliminacion: IsNull(),
-      } as any,
+        fecha_eliminacion: IsNull(),
+      },
     });
   }
 }

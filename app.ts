@@ -18,18 +18,23 @@ import miembroCuadrillaRoutes from "./src/modules/miembro-cuadrilla/miembro-cuad
 const app: Application = express();
 const API_PREFIX = "/api";
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
 app.use(`${API_PREFIX}/medidas`, medidaRoutes);
 app.use(`${API_PREFIX}/ordenes-trabajo`, ordenTrabajoRoutes);
-app.use(`${API_PREFIX}/asignaciones-orden-cuadrilla`, asignacionOrdenCuadrillaRoutes);
+app.use(
+  `${API_PREFIX}/asignaciones-orden-cuadrilla`,
+  asignacionOrdenCuadrillaRoutes,
+);
 app.use(`${API_PREFIX}/empleados`, empleadoRoutes);
 app.use(`${API_PREFIX}/cuadrillas`, cuadrillaRoutes);
 app.use(`${API_PREFIX}/miembros-cuadrilla`, miembroCuadrillaRoutes);

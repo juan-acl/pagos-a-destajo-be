@@ -1,23 +1,64 @@
-import { Entity, Column } from "typeorm";
-import { BaseEntity } from "../shared/base.entity";
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToOne,
+  JoinColumn,
+} from "typeorm";
+import { AsignacionEmpleado } from "./employeeAssignment.entity";
 
-@Entity()
-export class RevisionProduccion extends BaseEntity {
-  @Column({ type: "number", nullable: false })
+@Entity("DES_REVISION_PRODUCCION")
+export class RevisionProduccion {
+  @PrimaryGeneratedColumn({
+    name: "RVP_ID",
+    type: "number",
+  })
+  id!: number;
+  @Column({ name: "RVP_CANTIDAD_RECIBIDA", type: "number", nullable: false })
   cantidadRecibida: number;
 
-  @Column({ type: "number", nullable: false })
+  @Column({ name: "RVP_CANTIDAD_APROBADA", type: "number", nullable: false })
   cantidadAprobada: number;
 
-  @Column({ type: "varchar2", length: 50, nullable: false })
+  @Column({
+    name: "RVP_ESTADO_REVISION",
+    type: "varchar2",
+    length: 50,
+    nullable: false,
+  })
   estadoRevision: string;
 
-  @Column({ type: "varchar2", length: 255, nullable: true })
+  @Column({
+    name: "RVP_OBSERVACIONES",
+    type: "varchar2",
+    length: 255,
+    nullable: true,
+  })
   observaciones?: string;
 
-  @Column({ type: "date", nullable: false })
+  @Column({ name: "RVP_FECHA_REVISION", type: "date", nullable: false })
   fechaRevision: Date;
 
-  @Column({ type: "number", nullable: false })
-  asignacionEmpleadoId: number;
+  @OneToOne(() => AsignacionEmpleado, { nullable: true })
+  @JoinColumn({ name: "RVP_ASIGNACION_EMPLEADO_ID" })
+  asignacionEmpleadoId: AsignacionEmpleado;
+
+  @Column({
+    name: "RVP_FECHA_CREACION",
+    type: "timestamp",
+  })
+  fecha_creacion!: Date;
+
+  @Column({
+    name: "RVP_FECHA_ACTUALIZACION",
+    type: "timestamp",
+  })
+  fecha_actualizacion!: Date;
+
+  @Column({
+    name: "RVP_FECHA_ELIMINACION",
+    type: "timestamp",
+    nullable: true,
+  })
+  fecha_eliminacion!: Date | null;
 }
