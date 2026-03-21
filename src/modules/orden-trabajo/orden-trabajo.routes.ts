@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { PaymentController } from "./payment.controller";
+import { OrdenTrabajoController } from "./orden-trabajo.controller";
 
 const router: Router = Router();
-const ctrl = new PaymentController();
+const ctrl = new OrdenTrabajoController();
 
 router.get("/", ctrl.getAll);
 router.get("/:id", ctrl.getById);

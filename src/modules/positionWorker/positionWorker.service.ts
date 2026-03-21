@@ -1,4 +1,7 @@
-import { CreatePositionWorkerDtoType, UpdatePositionWorkerDtoType } from "./positionWorker.dto";
+import {
+  CreatePositionWorkerDtoType,
+  UpdatePositionWorkerDtoType,
+} from "./positionWorker.dto";
 import { PositionWorkerRepository } from "../../repository/positionWorker.repository";
 import { NotFoundError } from "../../error/customErrors";
 
@@ -34,15 +37,17 @@ export class PositionWorkerService {
 
   async remove(id: number) {
     await this.getById(id);
-    return this.repo.delete(id);
+    return this.repo.update(id, {
+      estado: "INACTIVO",
+      fechaEliminacion: new Date(),
+    });
   }
 
-  getAll() { 
+  getAll() {
     return this.repo.findAll({
       where: {
-        estado: "ACTIVO"
-      }
-    })
+        estado: "ACTIVO",
+      },
+    });
   }
-
 }

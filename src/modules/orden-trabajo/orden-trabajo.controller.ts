@@ -1,15 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { HttpResponse } from "../../shared/http-response";
-import { NotFoundError } from "../../error/customErrors";
-import { PaymentService } from "./payment.service";
-import { CreatePaymentDto, UpdatePaymentDto } from "./payment.dto";
+import { OrdenTrabajoService } from "./orden-trabajo.service";
+import { CreateOrdenTrabajoDto, UpdateOrdenTrabajoDto } from "./orden-trabajo.dto";
 
-export class PaymentController {
-  private readonly service = new PaymentService();
+export class OrdenTrabajoController {
+  private readonly service = new OrdenTrabajoService();
 
   getAll = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = await this.service.getAll()
+      const data = await this.service.getAll();
       HttpResponse.ok(res, data);
     } catch (e) {
       next(e);
@@ -21,14 +20,13 @@ export class PaymentController {
       const data = await this.service.getById(Number(req.params.id));
       HttpResponse.ok(res, data);
     } catch (e) {
-      if(e instanceof NotFoundError) return HttpResponse.notFound(res, "Verifique el identificador de la busqueda")
       next(e);
     }
   };
 
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dto = CreatePaymentDto.parse(req.body);
+      const dto = CreateOrdenTrabajoDto.parse(req.body);
       const data = await this.service.create(dto);
       HttpResponse.created(res, data);
     } catch (e) {
@@ -38,7 +36,7 @@ export class PaymentController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dto = UpdatePaymentDto.parse(req.body);
+      const dto = UpdateOrdenTrabajoDto.parse(req.body);
       const data = await this.service.update(Number(req.params.id), dto);
       HttpResponse.ok(res, data, "Actualizado correctamente");
     } catch (e) {
