@@ -42,8 +42,8 @@ export class AreaService {
 
   getAll() {
     return this.repo.findAll({
-      where: {
-        estado: "ACTIVO",
+      order: {
+        fechaCreacion: "DESC",
       },
     });
   }
