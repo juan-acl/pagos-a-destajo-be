@@ -54,9 +54,6 @@ export class PaymentService {
     return this.repo.findAll({
       withDeleted: true,
       relations: { loteProduccion: true },
-      order: {
-        fechaCreacion: "DESC",
-      },
     });
   }
 }
