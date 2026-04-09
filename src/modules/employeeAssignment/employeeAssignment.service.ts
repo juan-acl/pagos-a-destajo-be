@@ -17,7 +17,8 @@ export class EmployeeAssignmentService {
       } as any,
     });
 
-    if (!asignacion) throw new NotFoundError("Asignación de empleado no encontrada");
+    if (!asignacion)
+      throw new NotFoundError("Asignación de empleado no encontrada");
     return asignacion;
   }
 
@@ -35,7 +36,9 @@ export class EmployeeAssignmentService {
     await this.getById(id);
 
     return this.repo.update(id, {
-      ...(dto.metaIndividual !== undefined && { metaIndividual: dto.metaIndividual }),
+      ...(dto.metaIndividual !== undefined && {
+        metaIndividual: dto.metaIndividual,
+      }),
       ...(dto.estado !== undefined && { estado: dto.estado }),
       ...(dto.cuadrillaId !== undefined && { cuadrillaId: dto.cuadrillaId }),
     });
@@ -54,6 +57,9 @@ export class EmployeeAssignmentService {
       where: {
         fecha_eliminacion: IsNull(),
       } as any,
+      relations: {
+        cuadrillaId: true,
+      },
     });
   }
 }
