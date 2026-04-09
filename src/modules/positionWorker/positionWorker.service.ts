@@ -45,8 +45,9 @@ export class PositionWorkerService {
 
   getAll() {
     return this.repo.findAll({
-      where: {
-        estado: "ACTIVO",
+      withDeleted: true,
+      order: {
+        fechaCreacion: "DESC",
       },
     });
   }

@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  JoinColumn,
+  OneToOne,
+} from "typeorm";
+import { CuadrillaEntity } from "./cuadrilla.entity";
 
 @Entity("DES_ASIGNACION_EMPLEADO")
 export class AsignacionEmpleado {
@@ -42,10 +49,7 @@ export class AsignacionEmpleado {
   })
   fecha_eliminacion!: Date | null;
 
-  @Column({
-    name: "ASE_CUADRILLA_ID",
-    type: "number",
-    nullable: false,
-  })
-  cuadrillaId!: number;
+  @OneToOne(() => CuadrillaEntity, { nullable: true })
+  @JoinColumn({ name: "ASE_CUADRILLA_ID" })
+  cuadrillaId!: CuadrillaEntity;
 }
