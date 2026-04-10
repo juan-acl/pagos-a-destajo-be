@@ -13,7 +13,7 @@ export class ProductionReviewService {
     const revision = await this.repo.findOne({
       where: {
         id,
-        fechaEliminacion: IsNull(),
+        deletedAt: IsNull(),
       } as any,
     });
 
@@ -21,52 +21,52 @@ export class ProductionReviewService {
     return revision;
   }
 
-  async create(dto: CreateProductionReviewDtoType) {
-    const newReview = this.repo.create({
-      cantidadRecibida: dto.cantidadRecibida,
-      cantidadAprobada: dto.cantidadAprobada,
-      estadoRevision: dto.estadoRevision,
-      observaciones: dto.observaciones,
-      fechaRevision: dto.fechaRevision,
+async create(dto: CreateProductionReviewDtoType) {
+  const reportePendiente = await this.repo.findOne({
+    where: {
       asignacionEmpleadoId: dto.asignacionEmpleadoId,
-    });
-
-    return await this.repo.save(newReview);
+      estadoRevision: "PENDIENTE_REVISION",
+      deletedAt: IsNull(),
+    } as any,
+  });
+  if (reportePendiente) {
+    throw new Error("Ya tienes un reporte pendiente de revisión para esta asignación. Espera a que sea revisado antes de enviar otro.");
   }
+
+  const newReview = this.repo.create({
+    cantidadRecibida: dto.cantidadRecibida,
+    cantidadAprobada: dto.cantidadAprobada,
+    estadoRevision: dto.estadoRevision,
+    observaciones: dto.observaciones,
+    fechaRevision: dto.fechaRevision,
+    asignacionEmpleadoId: dto.asignacionEmpleadoId,
+  });
+
+  return await this.repo.save(newReview);
+}
 
   async update(id: number, dto: UpdateProductionReviewDtoType) {
     await this.getById(id);
 
     return this.repo.update(id, {
-      ...(dto.cantidadRecibida !== undefined && {
-        cantidadRecibida: dto.cantidadRecibida,
-      }),
-      ...(dto.cantidadAprobada !== undefined && {
-        cantidadAprobada: dto.cantidadAprobada,
-      }),
-      ...(dto.estadoRevision !== undefined && {
-        estadoRevision: dto.estadoRevision,
-      }),
+      ...(dto.cantidadRecibida !== undefined && { cantidadRecibida: dto.cantidadRecibida }),
+      ...(dto.cantidadAprobada !== undefined && { cantidadAprobada: dto.cantidadAprobada }),
+      ...(dto.estadoRevision !== undefined && { estadoRevision: dto.estadoRevision }),
       ...(dto.observaciones !== undefined && { observaciones: dto.observaciones }),
       ...(dto.fechaRevision !== undefined && { fechaRevision: dto.fechaRevision }),
-      ...(dto.asignacionEmpleadoId !== undefined && {
-        asignacionEmpleadoId: dto.asignacionEmpleadoId,
-      }),
+      ...(dto.asignacionEmpleadoId !== undefined && { asignacionEmpleadoId: dto.asignacionEmpleadoId }),
     });
   }
 
   async remove(id: number) {
     await this.getById(id);
-
-    return this.repo.update(id, {
-      fechaEliminacion: new Date(),
-    } as any);
+    return this.repo.update(id, { deletedAt: new Date() } as any);
   }
 
   getAll() {
     return this.repo.findAll({
       where: {
-        fechaEliminacion: IsNull(),
+        deletedAt: IsNull(),
       } as any,
     });
   }

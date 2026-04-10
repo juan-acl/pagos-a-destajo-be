@@ -1,23 +1,37 @@
-import { Entity, Column } from "typeorm";
-import { BaseEntity } from "../shared/base.entity";
+import {
+  Entity, Column, PrimaryGeneratedColumn,
+  CreateDateColumn, UpdateDateColumn, DeleteDateColumn
+} from "typeorm";
 
-@Entity()
-export class RevisionProduccion extends BaseEntity {
-  @Column({ type: "number", nullable: false })
+@Entity("DES_REVISION_PRODUCCION")
+export class RevisionProduccion {
+  @PrimaryGeneratedColumn({ name: "RVP_ID" })
+  id: number;
+
+  @Column({ name: "RVP_CANTIDAD_RECIBIDA", type: "number", nullable: false })
   cantidadRecibida: number;
 
-  @Column({ type: "number", nullable: false })
+  @Column({ name: "RVP_CANTIDAD_APROBADA", type: "number", nullable: false })
   cantidadAprobada: number;
 
-  @Column({ type: "varchar2", length: 50, nullable: false })
+  @Column({ name: "RVP_ESTADO_REVISION", type: "varchar2", length: 50, nullable: false })
   estadoRevision: string;
 
-  @Column({ type: "varchar2", length: 255, nullable: true })
+  @Column({ name: "RVP_OBSERVACIONES", type: "varchar2", length: 255, nullable: true })
   observaciones?: string;
 
-  @Column({ type: "date", nullable: false })
+  @Column({ name: "RVP_FECHA_REVISION", type: "date", nullable: false })
   fechaRevision: Date;
 
-  @Column({ type: "number", nullable: false })
+  @Column({ name: "RVP_ASIGNACION_EMPLEADO_ID", type: "number", nullable: false })
   asignacionEmpleadoId: number;
+
+  @CreateDateColumn({ name: "RVP_FECHA_CREACION", type: "timestamp" })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: "RVP_FECHA_ACTUALIZACION", type: "timestamp" })
+  updatedAt: Date;
+
+  @DeleteDateColumn({ name: "RVP_FECHA_ELIMINACION", type: "timestamp", nullable: true })
+  deletedAt: Date | null;
 }
