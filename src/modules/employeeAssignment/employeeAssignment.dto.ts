@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const CreateEmployeeAssignmentDto = z.object({
-  metaIndividual: z.number(),
+  metaIndividual: z.coerce.number(),
   estado: z.string().min(1).max(50),
-  cuadrillaId: z.number().int().positive(),
+  cuadrillaId: z.coerce.number().int().positive(),
 });
 
 export const UpdateEmployeeAssignmentDto = CreateEmployeeAssignmentDto.partial();

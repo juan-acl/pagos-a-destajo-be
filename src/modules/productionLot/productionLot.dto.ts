@@ -2,10 +2,10 @@ import { z } from "zod";
 
 export const CreateProductionLotDto = z.object({
   numeroLote: z.string().min(1).max(100),
-  totalPiezasAprobadas: z.number().nonnegative(),
+  totalPiezasAprobadas: z.coerce.number().nonnegative(),
   fechaEnvio: z.coerce.date(),
   estado: z.string().min(1).max(50),
-  revisionProduccionId: z.number().int().positive().optional(),
+  revisionProduccionId: z.coerce.number().int().positive().optional(),
 });
 
 export const UpdateProductionLotDto = CreateProductionLotDto.partial();

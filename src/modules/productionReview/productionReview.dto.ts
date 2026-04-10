@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 export const CreateProductionReviewDto = z.object({
-  cantidadRecibida: z.number().nonnegative(),
-  cantidadAprobada: z.number().nonnegative(),
+  cantidadRecibida: z.coerce.number().nonnegative(),
+  cantidadAprobada: z.coerce.number().nonnegative(),
   estadoRevision: z.string().min(1).max(50),
   observaciones: z.string().max(255).optional(),
   fechaRevision: z.coerce.date(),
-  asignacionEmpleadoId: z.number().int().positive(),
+  asignacionEmpleadoId: z.coerce.number().int().positive(),
 });
 
 export const UpdateProductionReviewDto = CreateProductionReviewDto.partial();

@@ -3,7 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   JoinColumn,
-  OneToOne,
+  ManyToOne,
 } from "typeorm";
 import { CuadrillaEntity } from "./cuadrilla.entity";
 
@@ -49,7 +49,7 @@ export class AsignacionEmpleado {
   })
   fecha_eliminacion!: Date | null;
 
-  @OneToOne(() => CuadrillaEntity, { nullable: true })
+  @ManyToOne(() => CuadrillaEntity, { nullable: true })
   @JoinColumn({ name: "ASE_CUADRILLA_ID" })
   cuadrillaId!: CuadrillaEntity;
 }

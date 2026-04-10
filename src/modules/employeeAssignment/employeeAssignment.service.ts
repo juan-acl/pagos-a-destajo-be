@@ -15,6 +15,9 @@ export class EmployeeAssignmentService {
         id,
         fecha_eliminacion: IsNull(),
       } as any,
+      relations: {
+        cuadrillaId: true,
+      },
     });
 
     if (!asignacion)
@@ -26,22 +29,27 @@ export class EmployeeAssignmentService {
     const newAssignment = this.repo.create({
       metaIndividual: dto.metaIndividual,
       estado: dto.estado,
-      cuadrillaId: dto.cuadrillaId,
+      cuadrillaId: { id: dto.cuadrillaId } as any,
     });
 
-    return await this.repo.save(newAssignment);
+    const saved = await this.repo.save(newAssignment);
+    return this.getById(saved.id);
   }
 
   async update(id: number, dto: UpdateEmployeeAssignmentDtoType) {
     await this.getById(id);
 
-    return this.repo.update(id, {
+    await this.repo.update(id, {
       ...(dto.metaIndividual !== undefined && {
         metaIndividual: dto.metaIndividual,
       }),
       ...(dto.estado !== undefined && { estado: dto.estado }),
-      ...(dto.cuadrillaId !== undefined && { cuadrillaId: dto.cuadrillaId }),
+      ...(dto.cuadrillaId !== undefined && {
+        cuadrillaId: { id: dto.cuadrillaId } as any,
+      }),
     });
+
+    return this.getById(id);
   }
 
   async remove(id: number) {

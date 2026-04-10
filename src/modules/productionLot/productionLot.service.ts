@@ -1,6 +1,7 @@
 import { IsNull } from "typeorm";
 import { NotFoundError } from "../../error/customErrors";
 import { LoteProduccionRepository } from "../../repository/productionLot.repository";
+import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
 import {
   CreateProductionLotDtoType,
   UpdateProductionLotDtoType,
@@ -8,6 +9,7 @@ import {
 
 export class ProductionLotService {
   private readonly repo = new LoteProduccionRepository();
+  private readonly revisionRepo = new RevisionProduccionRepository();
 
   async getById(id: number) {
     const lote = await this.repo.findOne({
@@ -15,6 +17,11 @@ export class ProductionLotService {
         id,
         fechaEliminacion: IsNull(),
       },
+      relations: {
+        revisionProduccionId: {
+          asignacionEmpleadoId: true,
+        },
+      } as any,
     });
 
     if (!lote) throw new NotFoundError("Lote de producción no encontrado");
@@ -22,21 +29,33 @@ export class ProductionLotService {
   }
 
   async create(dto: CreateProductionLotDtoType) {
+    if (dto.revisionProduccionId !== undefined) {
+      await this.ensureValidRevision(dto.revisionProduccionId);
+    }
+
     const newLot = this.repo.create({
       numeroLote: dto.numeroLote,
       totalPiezasAprobadas: dto.totalPiezasAprobadas,
       fechaEnvio: dto.fechaEnvio,
       estado: dto.estado,
-      revisionProduccionId: dto.revisionProduccionId,
+      revisionProduccionId:
+        dto.revisionProduccionId !== undefined
+          ? ({ id: dto.revisionProduccionId } as any)
+          : undefined,
     });
 
-    return await this.repo.save(newLot);
+    const saved = await this.repo.save(newLot);
+    return this.getById(saved.id);
   }
 
   async update(id: number, dto: UpdateProductionLotDtoType) {
     await this.getById(id);
 
-    return this.repo.update(id, {
+    if (dto.revisionProduccionId !== undefined) {
+      await this.ensureValidRevision(dto.revisionProduccionId);
+    }
+
+    await this.repo.update(id, {
       ...(dto.numeroLote !== undefined && { numeroLote: dto.numeroLote }),
       ...(dto.totalPiezasAprobadas !== undefined && {
         totalPiezasAprobadas: dto.totalPiezasAprobadas,
@@ -44,9 +63,11 @@ export class ProductionLotService {
       ...(dto.fechaEnvio !== undefined && { fechaEnvio: dto.fechaEnvio }),
       ...(dto.estado !== undefined && { estado: dto.estado }),
       ...(dto.revisionProduccionId !== undefined && {
-        revisionProduccionId: dto.revisionProduccionId,
+        revisionProduccionId: { id: dto.revisionProduccionId } as any,
       }),
     });
+
+    return this.getById(id);
   }
 
   async remove(id: number) {
@@ -62,6 +83,19 @@ export class ProductionLotService {
       where: {
         fechaEliminacion: IsNull(),
       },
+      relations: {
+        revisionProduccionId: {
+          asignacionEmpleadoId: true,
+        },
+      } as any,
     });
+  }
+
+  private async ensureValidRevision(revisionProduccionId: number) {
+    const revision = await this.revisionRepo.findById(revisionProduccionId);
+
+    if (!revision) {
+      throw new NotFoundError("La revisión de producción indicada no existe");
+    }
   }
 }
