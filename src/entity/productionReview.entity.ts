@@ -1,11 +1,13 @@
 import {
   Entity, Column, PrimaryGeneratedColumn,
-  CreateDateColumn, UpdateDateColumn, DeleteDateColumn
+  CreateDateColumn, UpdateDateColumn, DeleteDateColumn,
+  ManyToOne, JoinColumn
 } from "typeorm";
+import { AsignacionEmpleado } from "./employeeAssignment.entity";
 
 @Entity("DES_REVISION_PRODUCCION")
 export class RevisionProduccion {
-  @PrimaryGeneratedColumn({ name: "RVP_ID" })
+  @PrimaryGeneratedColumn({ name: "RVP_ID", type: "number" })
   id: number;
 
   @Column({ name: "RVP_CANTIDAD_RECIBIDA", type: "number", nullable: false })
@@ -22,6 +24,10 @@ export class RevisionProduccion {
 
   @Column({ name: "RVP_FECHA_REVISION", type: "date", nullable: false })
   fechaRevision: Date;
+
+  @ManyToOne(() => AsignacionEmpleado)
+  @JoinColumn({ name: "RVP_ASIGNACION_EMPLEADO_ID" })
+  asignacion: AsignacionEmpleado;
 
   @Column({ name: "RVP_ASIGNACION_EMPLEADO_ID", type: "number", nullable: false })
   asignacionEmpleadoId: number;

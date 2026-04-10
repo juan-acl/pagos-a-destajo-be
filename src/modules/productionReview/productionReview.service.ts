@@ -21,29 +21,30 @@ export class ProductionReviewService {
     return revision;
   }
 
-async create(dto: CreateProductionReviewDtoType) {
-  const reportePendiente = await this.repo.findOne({
-    where: {
+  async create(dto: CreateProductionReviewDtoType) {
+    const reportePendiente = await this.repo.findOne({
+      where: {
+        asignacionEmpleadoId: dto.asignacionEmpleadoId,
+        estadoRevision: "PENDIENTE_REVISION",
+        deletedAt: IsNull(),
+      } as any,
+    });
+
+    if (reportePendiente) {
+      throw new Error("Ya tienes un reporte pendiente de revisión para esta asignación. Espera a que sea revisado antes de enviar otro.");
+    }
+
+    const newReview = this.repo.create({
+      cantidadRecibida: dto.cantidadRecibida,
+      cantidadAprobada: dto.cantidadAprobada,
+      estadoRevision: dto.estadoRevision,
+      observaciones: dto.observaciones,
+      fechaRevision: dto.fechaRevision,
       asignacionEmpleadoId: dto.asignacionEmpleadoId,
-      estadoRevision: "PENDIENTE_REVISION",
-      deletedAt: IsNull(),
-    } as any,
-  });
-  if (reportePendiente) {
-    throw new Error("Ya tienes un reporte pendiente de revisión para esta asignación. Espera a que sea revisado antes de enviar otro.");
+    });
+
+    return await this.repo.save(newReview);
   }
-
-  const newReview = this.repo.create({
-    cantidadRecibida: dto.cantidadRecibida,
-    cantidadAprobada: dto.cantidadAprobada,
-    estadoRevision: dto.estadoRevision,
-    observaciones: dto.observaciones,
-    fechaRevision: dto.fechaRevision,
-    asignacionEmpleadoId: dto.asignacionEmpleadoId,
-  });
-
-  return await this.repo.save(newReview);
-}
 
   async update(id: number, dto: UpdateProductionReviewDtoType) {
     await this.getById(id);
