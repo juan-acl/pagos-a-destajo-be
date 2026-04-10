@@ -5,9 +5,9 @@ import { CreateEmpleadoDtoType, UpdateEmpleadoDtoType } from "./empleado.dto";
 export class EmpleadoService {
     private readonly repo = new EmpleadoRepository();
 
-    async getAll() {
-        return this.repo.findAll({ where: { estado: "ACTIVO" } });
-    }
+async getAll() {
+  return this.repo.findAll();
+}
 
     async getById(id: number) {
         const empleado = await this.repo.findById(id);

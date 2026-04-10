@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  JoinColumn,
+  OneToOne,
+} from "typeorm";
+import { RevisionProduccion } from "./productionReview.entity";
 
 @Entity("DES_LOTE_PRODUCCION")
 export class LoteProduccion {
@@ -59,10 +66,7 @@ export class LoteProduccion {
   })
   fechaEliminacion!: Date | null;
 
-  @Column({
-    name: "LTP_REVISION_PRODUCCION_ID",
-    type: "number",
-    nullable: true,
-  })
-  revisionProduccionId!: number | null;
+  @OneToOne(() => RevisionProduccion, { nullable: true })
+  @JoinColumn({ name: "LTP_REVISION_PRODUCCION_ID" })
+  revisionProduccionId!: RevisionProduccion;
 }

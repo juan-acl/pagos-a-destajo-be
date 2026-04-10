@@ -5,9 +5,9 @@ import { CreateCuadrillaDtoType, UpdateCuadrillaDtoType } from "./cuadrilla.dto"
 export class CuadrillaService {
     private readonly repo = new CuadrillaRepository();
 
-    async getAll() {
-        return this.repo.findAll({ where: { estado: "ACTIVO" } });
-    }
+async getAll() {
+  return this.repo.findAll();
+}
 
     async getById(id: number) {
         const cuadrilla = await this.repo.findById(id);
