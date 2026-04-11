@@ -41,6 +41,9 @@ export class RevisionProduccion {
   })
   estadoRevision!: string;
 
+  @Column({ name: "RVP_OBSERVACIONES", type: "varchar2", length: 255, nullable: true })
+  observaciones?: string;
+
   @Column({
     name: "RVP_OBSERVACIONES",
     type: "varchar2",
