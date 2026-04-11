@@ -202,7 +202,7 @@ export class ProductionReviewService {
     if (validation.estadoResultante === "APROBADA") {
       await this.assignmentRepo.update(dto.asignacionEmpleadoId, {
         estado: encodeAssignmentState(
-          "INACTIVA",
+          "ACTIVA",
           validation.meta.asignacionOrdenCuadrillaId,
           validation.meta.empleadoId,
         ),
@@ -242,7 +242,7 @@ export class ProductionReviewService {
 
     await this.assignmentRepo.update(payload.asignacionEmpleadoId, {
       estado: encodeAssignmentState(
-        validation.estadoResultante === "APROBADA" ? "INACTIVA" : "ACTIVA",
+        validation.estadoResultante === "APROBADA" ? "ACTIVA" : "ACTIVA",
         validation.meta.asignacionOrdenCuadrillaId,
         validation.meta.empleadoId,
       ),
