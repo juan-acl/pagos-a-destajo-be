@@ -19,6 +19,25 @@ export class ProductionLotController {
     }
   };
 
+  getCandidates = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await this.service.getCandidates();
+      HttpResponse.ok(res, data);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  generate = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dto = CreateProductionLotDto.parse(req.body);
+      const data = await this.service.generate(dto);
+      HttpResponse.created(res, data, "Lote generado correctamente");
+    } catch (e) {
+      next(e);
+    }
+  };
+
   getById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = await this.service.getById(Number(req.params.id));
