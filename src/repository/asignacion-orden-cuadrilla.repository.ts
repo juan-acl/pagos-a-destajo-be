@@ -1,10 +1,10 @@
 import { AppDataSource } from "../config/data-source";
 import { BaseRepository } from "../shared/base.repository";
-import { AsignacionOrdenCuadrillaEntity } from "../entity/asignacion-orden-cuadrilla.entity";
+import { AsignacionOrdenCuadrilla } from "../entity/asignacionCuadrilla.entity"; 
 
-export class AsignacionOrdenCuadrillaRepository extends BaseRepository<AsignacionOrdenCuadrillaEntity> {
+export class AsignacionOrdenCuadrillaRepository extends BaseRepository<AsignacionOrdenCuadrilla> {
   constructor() {
-    super(AppDataSource.getRepository(AsignacionOrdenCuadrillaEntity));
+    super(AppDataSource.getRepository(AsignacionOrdenCuadrilla)); 
   }
 
   findByOrdenYCuadrilla(ordenTrabajoId: number, cuadrillaId: number) {

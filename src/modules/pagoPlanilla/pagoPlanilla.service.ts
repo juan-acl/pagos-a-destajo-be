@@ -1,8 +1,8 @@
 import { In } from "typeorm";
-import { LoteProduccion } from "../../entity/productionLot.entity";
+import { LoteProduccion } from "../../entity/loteProduccion.entity";
 import { BadRequestError, NotFoundError } from "../../error/customErrors";
 import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
-import { AsignacionEmpleadoRepository } from "../../repository/employeeAssignment.repository";
+import { EmployeeAssignmentRepository } from "../../repository/employeeAssignment.repository";
 import { MiembroCuadrillaRepository } from "../../repository/miembro-cuadrilla.repository";
 import { OrdenTrabajoRepository } from "../../repository/orden-trabajo.repository";
 import { PlanillaRepository } from "../../repository/pagoPlanilla.repository";
@@ -19,7 +19,7 @@ export class PaymentService {
   private readonly revisionRepo = new RevisionProduccionRepository();
   private readonly ordenRepo = new OrdenTrabajoRepository();
   private readonly asignacionRepo = new AsignacionOrdenCuadrillaRepository();
-  private readonly asignacionEmpleadoRepo = new AsignacionEmpleadoRepository();
+private readonly asignacionEmpleadoRepo = new EmployeeAssignmentRepository();
   private readonly miembroCuadrillaRepo = new MiembroCuadrillaRepository();
 
   async getById(id: number) {

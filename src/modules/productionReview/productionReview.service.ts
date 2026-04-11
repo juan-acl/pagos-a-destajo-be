@@ -5,10 +5,29 @@ import {
   CreateProductionReviewDtoType,
   UpdateProductionReviewDtoType,
 } from "./productionReview.dto";
+<<<<<<< Updated upstream
 import { AsignacionEmpleado } from "../../entity/employeeAssignment.entity";
 
 export class ProductionReviewService {
   private readonly repo = new RevisionProduccionRepository();
+=======
+import { EmployeeAssignmentService } from "../employeeAssignment/employeeAssignment.service";
+import {
+  encodeAssignmentState,
+  enrichReview,
+  getRejectionPercentage,
+  normalizeState,
+  parseAssignmentState,
+} from "../../shared/temporal-flow";
+import { EmployeeAssignmentRepository } from "../../repository/employeeAssignment.repository";
+import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
+
+export class ProductionReviewService {
+  private readonly repo = new RevisionProduccionRepository();
+  private readonly assignmentService = new EmployeeAssignmentService();
+private readonly assignmentRepo = new EmployeeAssignmentRepository();
+  private readonly orderAssignmentRepo = new AsignacionOrdenCuadrillaRepository();
+>>>>>>> Stashed changes
 
   async getById(id: number) {
     const revision = await this.repo.findOne({

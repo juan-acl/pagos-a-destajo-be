@@ -12,7 +12,7 @@ export class Area {
   @Column({ name: "ARE_NOMBRE", type: "varchar", length: 100, nullable: false, unique: true })
   nombre: string;
 
-  @Column({ name: "ARE_ESTADO", type: "varchar",length: 50, nullable: false, enum: zStatus })
+  @Column({ name: "ARE_ESTADO", type: "varchar", length: 50, nullable: false, enum: zStatus })
   estado: StatusType;
 
   @CreateDateColumn({ name: "ARE_FECHA_CREACION" })

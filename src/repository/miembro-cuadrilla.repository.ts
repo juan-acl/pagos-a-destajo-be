@@ -1,30 +1,16 @@
 import { AppDataSource } from "../config/data-source";
 import { BaseRepository } from "../shared/base.repository";
-import { MiembroCuadrillaEntity } from "../entity/miembro-cuadrilla.entity";
+import { MiembroCuadrilla } from "../entity/miembro.entity";
 
-export class MiembroCuadrillaRepository extends BaseRepository<MiembroCuadrillaEntity> {
-    constructor() {
-        super(AppDataSource.getRepository(MiembroCuadrillaEntity));
-    }
+export class MiembroCuadrillaRepository extends BaseRepository<MiembroCuadrilla> {
+  constructor() {
+    super(AppDataSource.getRepository(MiembroCuadrilla));
+  }
 
-    findAll() {
-        return this.repo.find({
-            where: { estado: "ACTIVO" },
-            relations: ["empleado", "cuadrilla"],
-        });
-    }
-
-    findByCuadrilla(cuadrillaId: number) {
-        return this.repo.find({
-            where: { cuadrillaId, estado: "ACTIVO" },
-            relations: ["empleado", "cuadrilla"],
-        });
-    }
-
-    findByEmpleado(empleadoId: number) {
-        return this.repo.find({
-            where: { empleadoId, estado: "ACTIVO" },
-            relations: ["empleado", "cuadrilla"],
-        });
-    }
+  findAll() {
+    return this.repo.find({
+      where: { estado: "ACTIVO" },
+      relations: ["empleado", "cuadrilla"],
+    });
+  }
 }

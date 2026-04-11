@@ -1,10 +1,10 @@
 import { AppDataSource } from "../config/data-source";
 import { BaseRepository } from "../shared/base.repository";
-import { MedidaEntity } from "../entity/medidas.entity";
+import { Medidas } from "../entity/medidas.entity"; 
 
-export class MedidaRepository extends BaseRepository<MedidaEntity> {
+export class MedidaRepository extends BaseRepository<Medidas> {
   constructor() {
-    super(AppDataSource.getRepository(MedidaEntity));
+    super(AppDataSource.getRepository(Medidas)); 
   }
 
   findByNombre(nombre: string) {

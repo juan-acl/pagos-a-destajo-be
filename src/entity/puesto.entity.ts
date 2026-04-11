@@ -12,7 +12,7 @@ export class Puesto {
   @Column({ name: "PST_DESCRIPCION", type: "varchar", length: 200, nullable: false })
   descripcion: string;
 
-  @Column({ name: "PST_ESTADO", type: "varchar",length: 50, nullable: false, enum: zStatus })
+  @Column({ name: "PST_ESTADO", type: "varchar", length: 50, nullable: false, enum: zStatus })
   estado: StatusType;
 
   @CreateDateColumn({ name: "PST_FECHA_CREACION" })
