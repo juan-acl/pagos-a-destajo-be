@@ -6,7 +6,6 @@ import {
   CreateProductionLotDtoType,
   UpdateProductionLotDtoType,
 } from "./productionLot.dto";
-import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
 import { EmployeeAssignmentService } from "../employeeAssignment/employeeAssignment.service";
 import { ProductionReviewService } from "../productionReview/productionReview.service";
 import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
@@ -250,8 +249,7 @@ export class ProductionLotService {
 
     const saved = await this.repo.save(newLot);
     return this.getById(saved.id);
-    const saved = await this.repo.save(newLot);
-    return this.getById(saved.id);
+  
   }
 
   async update(id: number, dto: UpdateProductionLotDtoType) {
@@ -275,8 +273,7 @@ export class ProductionLotService {
       ...(dto.fechaEnvio !== undefined && { fechaEnvio: dto.fechaEnvio }),
       ...(dto.estado !== undefined && { estado: normalizeState(dto.estado) }),
       ...(dto.revisionProduccionId !== undefined && {
-        revisionProduccionId: { id: dto.revisionProduccionId } as any,
-        revisionProduccionId: { id: dto.revisionProduccionId } as any,
+        revisionProduccionId: { id: dto.revisionProduccionId } as any
       }),
     } as any);
 
