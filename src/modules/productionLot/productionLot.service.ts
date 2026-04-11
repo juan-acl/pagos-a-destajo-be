@@ -31,7 +31,7 @@ export class ProductionLotService {
       this.reviewService.getAll() as Promise<any[]>,
       this.repo.findAll({
         where: { fechaEliminacion: IsNull() } as any,
-        relations: { revisionProduccionId: { asignacionEmpleadoId: true } } as any,
+        relations: { revisionProduccionId: { asignacion: true } } as any,
       }),
     ]);
 
@@ -62,7 +62,7 @@ export class ProductionLotService {
       );
       const openLot = lots.find((lot) => {
         const relatedReview: any = lot.revisionProduccionId;
-        const relatedAssignmentId = Number(relatedReview?.asignacionEmpleadoId?.id ?? relatedReview?.asignacionEmpleadoId);
+        const relatedAssignmentId = Number(relatedReview?.asignacion?.id ?? relatedReview?.asignacionEmpleadoId);
         const relatedAssignment = assignments.find((item) => item.id === relatedAssignmentId);
         return (
           relatedAssignment?.asignacionOrdenCuadrillaId === aoc.id &&
