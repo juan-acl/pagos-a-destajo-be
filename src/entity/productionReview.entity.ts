@@ -2,7 +2,7 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  OneToOne,
+  ManyToOne,
   JoinColumn,
 } from "typeorm";
 import { AsignacionEmpleado } from "./employeeAssignment.entity";
@@ -39,7 +39,7 @@ export class RevisionProduccion {
   @Column({ name: "RVP_FECHA_REVISION", type: "date", nullable: false })
   fechaRevision: Date;
 
-  @OneToOne(() => AsignacionEmpleado, { nullable: true })
+  @ManyToOne(() => AsignacionEmpleado, { nullable: true })
   @JoinColumn({ name: "RVP_ASIGNACION_EMPLEADO_ID" })
   asignacionEmpleadoId: AsignacionEmpleado;
 

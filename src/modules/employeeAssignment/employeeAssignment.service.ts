@@ -362,6 +362,8 @@ return panels;
 
     const saved = await this.repo.save(newAssignment);
     return this.getById(saved.id);
+    const saved = await this.repo.save(newAssignment);
+    return this.getById(saved.id);
   }
 
   async update(id: number, dto: UpdateEmployeeAssignmentDtoType) {

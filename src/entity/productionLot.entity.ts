@@ -3,7 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   JoinColumn,
-  OneToOne,
+  ManyToOne,
 } from "typeorm";
 import { RevisionProduccion } from "./productionReview.entity";
 
@@ -66,7 +66,7 @@ export class LoteProduccion {
   })
   fechaEliminacion!: Date | null;
 
-  @OneToOne(() => RevisionProduccion, { nullable: true })
+  @ManyToOne(() => RevisionProduccion, { nullable: true })
   @JoinColumn({ name: "LTP_REVISION_PRODUCCION_ID" })
   revisionProduccionId!: RevisionProduccion;
 }

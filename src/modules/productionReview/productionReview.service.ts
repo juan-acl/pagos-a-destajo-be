@@ -246,4 +246,19 @@ export class ProductionReviewService {
   async getAll() {
     return this.buildEnrichedReviews();
   }
+
+  private validateQuantities(cantidadRecibida: number, cantidadAprobada: number) {
+    if (cantidadAprobada > cantidadRecibida) {
+      throw new BadRequestError(
+        "La cantidad aprobada no puede ser mayor que la cantidad recibida",
+      );
+    }
+  }
+
+  private async ensureValidAssignment(asignacionEmpleadoId: number) {
+    const asignacion = await this.asignacionRepo.findById(asignacionEmpleadoId);
+    if (!asignacion) {
+      throw new NotFoundError("La asignación de empleado indicada no existe");
+    }
+  }
 }

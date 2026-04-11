@@ -1,6 +1,7 @@
 import { IsNull } from "typeorm";
 import { BadRequestError, NotFoundError } from "../../error/customErrors";
 import { LoteProduccionRepository } from "../../repository/productionLot.repository";
+import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
 import {
   CreateProductionLotDtoType,
   UpdateProductionLotDtoType,
@@ -249,6 +250,8 @@ export class ProductionLotService {
 
     const saved = await this.repo.save(newLot);
     return this.getById(saved.id);
+    const saved = await this.repo.save(newLot);
+    return this.getById(saved.id);
   }
 
   async update(id: number, dto: UpdateProductionLotDtoType) {
@@ -273,6 +276,7 @@ export class ProductionLotService {
       ...(dto.estado !== undefined && { estado: normalizeState(dto.estado) }),
       ...(dto.revisionProduccionId !== undefined && {
         revisionProduccionId: { id: dto.revisionProduccionId } as any,
+        revisionProduccionId: { id: dto.revisionProduccionId } as any,
       }),
     } as any);
 
@@ -288,3 +292,4 @@ export class ProductionLotService {
     return this.enrichLots();
   }
 }
+
