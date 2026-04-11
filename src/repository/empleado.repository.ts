@@ -1,17 +1,5 @@
 import { AppDataSource } from "../config/data-source";
 import { BaseRepository } from "../shared/base.repository";
-<<<<<<< Updated upstream
-import { EmpleadoEntity } from "../entity/empleado.entity";
-
-export class EmpleadoRepository extends BaseRepository<EmpleadoEntity> {
-    constructor() {
-        super(AppDataSource.getRepository(EmpleadoEntity));
-    }
-
-    findByEmail(email: string) {
-        return this.repo.findOne({ where: { email } });
-    }
-=======
 import { Empleado } from "../entity/empleado.entity";
 import { MiembroCuadrilla } from "../entity/miembro.entity";
 import { AsignacionEmpleado } from "../entity/asignacionEmpleado.entity";
@@ -41,14 +29,14 @@ export class EmpleadoRepository extends BaseRepository<Empleado> {
   findUltimoReporte(asignacionEmpleadoId: number) {
     return AppDataSource.getRepository(RevisionProduccion).findOne({
       where: { asignacionEmpleadoId },
-      order: { fechaCreacion: "DESC" },
+      order: { fechaCreacion: "DESC" }, // ✅ tu versión correcta
     });
   }
 
   findHistorialReportes(asignacionEmpleadoId: number) {
     return AppDataSource.getRepository(RevisionProduccion).find({
       where: { asignacionEmpleadoId },
-      order: { fechaCreacion: "DESC" },
+      order: { fechaCreacion: "DESC" }, // ✅ tu versión correcta
     });
   }
 
@@ -73,5 +61,4 @@ export class EmpleadoRepository extends BaseRepository<Empleado> {
       ORDER BY p.PGP_FECHA_PAGO DESC
     `, [empleadoId]);
   }
->>>>>>> Stashed changes
 }

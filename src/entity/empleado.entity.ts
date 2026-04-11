@@ -1,15 +1,12 @@
 <<<<<<< Updated upstream
-import {
-    Entity, Column, PrimaryGeneratedColumn,
-    CreateDateColumn, UpdateDateColumn, DeleteDateColumn
-} from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, DeleteDateColumn, UpdateDateColumn } from "typeorm";
 
-@Entity("DES_EMPLEADO")
-export class EmpleadoEntity {
-    @PrimaryGeneratedColumn({ name: "EMP_ID" })
-    id: number;
+@Entity()
+export class Empleado {
+  @PrimaryGeneratedColumn({ name: "EMP_ID" })
+  id: number;
 
-    @Column({ name: "EMP_PST_PUESTO", type: "number", nullable: true })
+  @Column({ name: "EMP_PST_PUESTO", type: "number", nullable: true })
     pstPuesto: number | null;
 =======
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, DeleteDateColumn, UpdateDateColumn } from "typeorm";
