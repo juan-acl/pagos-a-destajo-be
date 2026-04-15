@@ -4,6 +4,7 @@ import { NotFoundError } from "../../error/customErrors";
 import { EmployeeAssignmentService } from "./employeeAssignment.service";
 import {
   CreateEmployeeAssignmentDto,
+  DistributeEmployeeAssignmentsDto,
   UpdateEmployeeAssignmentDto,
 } from "./employeeAssignment.dto";
 
@@ -14,6 +15,25 @@ export class EmployeeAssignmentController {
     try {
       const data = await this.service.getAll();
       HttpResponse.ok(res, data);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  getPanels = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await this.service.getPanels();
+      HttpResponse.ok(res, data);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  distribute = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dto = DistributeEmployeeAssignmentsDto.parse(req.body);
+      const data = await this.service.distribute(dto);
+      HttpResponse.created(res, data, "Metas distribuidas correctamente");
     } catch (e) {
       next(e);
     }

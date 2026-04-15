@@ -1,43 +1,84 @@
 import {
-  Entity, Column, PrimaryGeneratedColumn,
-  CreateDateColumn, UpdateDateColumn, DeleteDateColumn,
-  ManyToOne, JoinColumn
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  RelationId,
 } from "typeorm";
 import { AsignacionEmpleado } from "./employeeAssignment.entity";
 
 @Entity("DES_REVISION_PRODUCCION")
 export class RevisionProduccion {
-  @PrimaryGeneratedColumn({ name: "RVP_ID", type: "number" })
-  id: number;
+  @PrimaryGeneratedColumn({
+    name: "RVP_ID",
+    type: "number",
+  })
+  id!: number;
 
-  @Column({ name: "RVP_CANTIDAD_RECIBIDA", type: "number", nullable: false })
-  cantidadRecibida: number;
+  @Column({
+    name: "RVP_CANTIDAD_RECIBIDA",
+    type: "number",
+    nullable: false,
+  })
+  cantidadRecibida!: number;
 
-  @Column({ name: "RVP_CANTIDAD_APROBADA", type: "number", nullable: false })
-  cantidadAprobada: number;
+  @Column({
+    name: "RVP_CANTIDAD_APROBADA",
+    type: "number",
+    nullable: false,
+  })
+  cantidadAprobada!: number;
 
-  @Column({ name: "RVP_ESTADO_REVISION", type: "varchar2", length: 50, nullable: false })
-  estadoRevision: string;
+  @Column({
+    name: "RVP_ESTADO_REVISION",
+    type: "varchar2",
+    length: 50,
+    nullable: false,
+  })
+  estadoRevision!: string;
 
-  @Column({ name: "RVP_OBSERVACIONES", type: "varchar2", length: 255, nullable: true })
+  @Column({
+    name: "RVP_OBSERVACIONES",
+    type: "varchar2",
+    length: 255,
+    nullable: true,
+  })
   observaciones?: string;
 
-  @Column({ name: "RVP_FECHA_REVISION", type: "date", nullable: false })
-  fechaRevision: Date;
+  @Column({
+    name: "RVP_FECHA_REVISION",
+    type: "date",
+    nullable: false,
+  })
+  fechaRevision!: Date;
 
-  @ManyToOne(() => AsignacionEmpleado)
+  @ManyToOne(() => AsignacionEmpleado, { nullable: true })
   @JoinColumn({ name: "RVP_ASIGNACION_EMPLEADO_ID" })
-  asignacion: AsignacionEmpleado;
+  asignacion!: AsignacionEmpleado | null;
 
-  @Column({ name: "RVP_ASIGNACION_EMPLEADO_ID", type: "number", nullable: false })
-  asignacionEmpleadoId: number;
+  @RelationId((revision: RevisionProduccion) => revision.asignacion)
+  asignacionEmpleadoId!: number | null;
 
-  @CreateDateColumn({ name: "RVP_FECHA_CREACION", type: "timestamp" })
-  createdAt: Date;
+  @CreateDateColumn({
+    name: "RVP_FECHA_CREACION",
+    type: "timestamp",
+  })
+  fecha_creacion!: Date;
 
-  @UpdateDateColumn({ name: "RVP_FECHA_ACTUALIZACION", type: "timestamp" })
-  updatedAt: Date;
+  @UpdateDateColumn({
+    name: "RVP_FECHA_ACTUALIZACION",
+    type: "timestamp",
+  })
+  fecha_actualizacion!: Date;
 
-  @DeleteDateColumn({ name: "RVP_FECHA_ELIMINACION", type: "timestamp", nullable: true })
-  deletedAt: Date | null;
+  @DeleteDateColumn({
+    name: "RVP_FECHA_ELIMINACION",
+    type: "timestamp",
+    nullable: true,
+  })
+  fecha_eliminacion!: Date | null;
 }

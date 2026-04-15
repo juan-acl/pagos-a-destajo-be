@@ -19,6 +19,15 @@ export class ProductionReviewController {
     }
   };
 
+  getPending = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await this.service.getPendingAssignments();
+      HttpResponse.ok(res, data);
+    } catch (e) {
+      next(e);
+    }
+  };
+
   getById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = await this.service.getById(Number(req.params.id));
@@ -35,7 +44,7 @@ export class ProductionReviewController {
     try {
       const dto = CreateProductionReviewDto.parse(req.body);
       const data = await this.service.create(dto);
-      HttpResponse.created(res, data);
+      HttpResponse.created(res, data, "Revisión registrada correctamente");
     } catch (e) {
       next(e);
     }

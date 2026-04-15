@@ -4,6 +4,7 @@ import { ProductionReviewController } from "./productionReview.controller";
 const router: Router = Router();
 const ctrl = new ProductionReviewController();
 
+router.get("/pending", ctrl.getPending);
 router.get("/", ctrl.getAll);
 router.get("/:id", ctrl.getById);
 router.post("/", ctrl.create);
