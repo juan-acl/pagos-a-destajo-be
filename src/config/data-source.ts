@@ -5,14 +5,14 @@ import { Puesto } from "../entity/puesto.entity";
 import { PrefixNamingStrategy } from "./nomenclature";
 import { Area } from "../entity/area.entity";
 import { Planilla } from "../entity/pagoPlanilla.entity";
-import { Cuadrilla } from "../entity/cuadrilla.entity";
+import { CuadrillaEntity } from "../entity/cuadrilla.entity";
 import { Empleado } from "../entity/empleado.entity";
 import { MiembroCuadrilla } from "../entity/miembro.entity";
-import { Medidas } from "../entity/medidas.entity";
+import { MedidaEntity } from "../entity/medidas.entity";
 import { AsignacionOrdenCuadrilla } from "../entity/asignacionCuadrilla.entity"; 
 import { AsignacionEmpleado } from "../entity/asignacionEmpleado.entity";
-import { LoteProduccion } from "../entity/loteProduccion.entity";
-import { OrdenTrabajo } from "../entity/ordenTrabajo.entity";
+import { LoteProduccion } from "../entity/productionLot.entity";
+import { OrdenTrabajoEntity } from "../entity/orden-trabajo.entity";
 import { RevisionProduccion } from "../entity/revisionProduccion.entity";
 
 export const AppDataSource = new DataSource({
@@ -28,12 +28,12 @@ export const AppDataSource = new DataSource({
     Area,
     AsignacionOrdenCuadrilla,
     AsignacionEmpleado,
-    Cuadrilla,
+    CuadrillaEntity,
     Empleado,
     LoteProduccion,
-    Medidas,
+    MedidaEntity,
     MiembroCuadrilla,
-    OrdenTrabajo,
+    OrdenTrabajoEntity,
     Planilla,
     Puesto,
     RevisionProduccion,

@@ -20,12 +20,3 @@ export class BadRequestError extends AppError {
     super(message, 400);
   }
 }
-<<<<<<< Updated upstream
-=======
-
-export class ConflictException extends AppError {
-  constructor(message: string = "Resource existente") {
-    super(message, 204);
-  }
-}
->>>>>>> Stashed changes

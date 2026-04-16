@@ -1,6 +1,6 @@
 import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
 import { Empleado } from "./empleado.entity";
-import { Cuadrilla } from "./cuadrilla.entity";
+import { CuadrillaEntity } from "./cuadrilla.entity";
 
 @Entity()
 export class MiembroCuadrilla {
@@ -14,9 +14,9 @@ export class MiembroCuadrilla {
   @Column({ name: "MIC_EMPLEADO_ID", type: "number" })
   empleadoId: number;
 
-  @ManyToOne(() => Cuadrilla)
+  @ManyToOne(() => CuadrillaEntity)
   @JoinColumn({ name: "MIC_CUADRILLA_ID" })
-  cuadrilla: Cuadrilla;
+  cuadrilla: CuadrillaEntity;
 
   @Column({ name: "MIC_CUADRILLA_ID", type: "number" })
   cuadrillaId: number;
@@ -24,7 +24,7 @@ export class MiembroCuadrilla {
   @Column({ name: "MIC_FECHA_INGRESO", type: "date", nullable: true })
   fechaIngreso: Date | null;
 
-  @Column({ name: "MIC_ESTADO", type: "varchar", length: 20, default: "ACTIVO" }) // ✅ corregido a mayúsculas
+  @Column({ name: "MIC_ESTADO", type: "varchar", length: 20, default: "ACTIVO" })
   estado: string;
 
   @CreateDateColumn({ name: "MIC_FECHA_CREACION" })

@@ -1,10 +1,10 @@
 import { AppDataSource } from "../config/data-source";
 import { BaseRepository } from "../shared/base.repository";
-import { OrdenTrabajo } from "../entity/ordenTrabajo.entity";
+import { OrdenTrabajoEntity } from "../entity/orden-trabajo.entity";
 
-export class OrdenTrabajoRepository extends BaseRepository<OrdenTrabajo> {
+export class OrdenTrabajoRepository extends BaseRepository<OrdenTrabajoEntity> {
   constructor() {
-    super(AppDataSource.getRepository(OrdenTrabajo)); // ✅ clase correcta
+    super(AppDataSource.getRepository(OrdenTrabajoEntity));
   }
 
   findByNumeroOrden(numeroOrden: string) {

@@ -1,11 +1,7 @@
 import { Entity, Column, OneToOne, JoinColumn, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
 import { PayType, StatusPayType, zPay, zStatusPay } from "../shared/paymentMethods";
-<<<<<<< Updated upstream
 import { LoteProduccion } from "./productionLot.entity";
 
-=======
-import { LoteProduccion } from "./loteProduccion.entity";
->>>>>>> Stashed changes
 
 @Entity()
 export class Planilla {

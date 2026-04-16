@@ -1,14 +1,14 @@
 import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, DeleteDateColumn, UpdateDateColumn, CreateDateColumn } from "typeorm";
-import { Cuadrilla } from "./cuadrilla.entity";
+import { CuadrillaEntity } from "./cuadrilla.entity";
 
 @Entity()
 export class AsignacionEmpleado {
   @PrimaryGeneratedColumn({ name: "ASE_ID" })
   id: number;
 
-  @ManyToOne(() => Cuadrilla, { nullable: false })
+  @ManyToOne(() => CuadrillaEntity, { nullable: false })
   @JoinColumn({ name: "ASE_CUADRILLA_ID" })
-  cuadrilla: Cuadrilla;
+  cuadrilla: CuadrillaEntity;
 
   @Column({ name: "ASE_CUADRILLA_ID", type: "number", insert: false, update: false }) // ✅ agregado
   cuadrillaId: number;

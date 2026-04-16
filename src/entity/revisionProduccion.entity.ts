@@ -10,7 +10,7 @@ export class RevisionProduccion {
   @JoinColumn({ name: "RVP_ASIGNACION_EMPLEADO_ID" })
   asignacionEmpleado: AsignacionEmpleado;
 
-  @Column({ name: "RVP_ASIGNACION_EMPLEADO_ID", type: "number", insert: false, update: false }) // ✅ agregado
+  @Column({ name: "RVP_ASIGNACION_EMPLEADO_ID", type: "number", insert: false, update: false })
   asignacionEmpleadoId: number;
 
   @Column({ name: "RVP_CANTIDAD_RECIBIDA", type: "number" })

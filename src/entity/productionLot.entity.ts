@@ -5,7 +5,7 @@ import {
   JoinColumn,
   OneToOne,
 } from "typeorm";
-import { RevisionProduccion } from "./productionReview.entity";
+import { RevisionProduccion } from "./revisionProduccion.entity";
 
 @Entity("DES_LOTE_PRODUCCION")
 export class LoteProduccion {
