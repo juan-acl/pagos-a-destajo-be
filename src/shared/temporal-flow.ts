@@ -1,7 +1,7 @@
-import { AsignacionEmpleado } from "../entity/asignacionEmpleado.entity"; 
-import { RevisionProduccion } from "../entity/revisionProduccion.entity"; 
-import { Empleado } from "../entity/empleado.entity";
-import { MiembroCuadrilla } from "../entity/miembro.entity";
+import { AsignacionEmpleado } from "../entity/employeeAssignment.entity";
+import { RevisionProduccion } from "../entity/productionReview.entity";
+import { EmpleadoEntity } from "../entity/empleado.entity";
+import { MiembroCuadrillaEntity } from "../entity/miembro-cuadrilla.entity";
 
 export type AssignmentStateMeta = {
   raw: string;
@@ -59,7 +59,7 @@ export function parseAssignmentState(value?: string | null): AssignmentStateMeta
   return { raw, estadoBase, asignacionOrdenCuadrillaId, empleadoId };
 }
 
-export function getEmployeeFullName(empleado?: Partial<Empleado> | null) { 
+export function getEmployeeFullName(empleado?: Partial<EmpleadoEntity> | null) {
   if (!empleado) return "Empleado sin nombre";
 
   return [
@@ -73,7 +73,7 @@ export function getEmployeeFullName(empleado?: Partial<Empleado> | null) {
     .trim();
 }
 
-export function getMiembroSortDate(miembro: MiembroCuadrilla) { 
+export function getMiembroSortDate(miembro: MiembroCuadrillaEntity) {
   return miembro.fechaIngreso ? new Date(miembro.fechaIngreso).getTime() : Number.MAX_SAFE_INTEGER;
 }
 
@@ -85,7 +85,7 @@ export function getRejectionPercentage(cantidadRecibida: number, cantidadAprobad
 export function enrichAssignment(
   assignment: AsignacionEmpleado,
   options?: {
-    empleado?: Empleado | null; 
+    empleado?: EmpleadoEntity | null;
     cuadrilla?: { id: number; nombre?: string; codigoCuadrilla?: string | null } | null;
     asignacionOrdenCuadrilla?: { id: number; ordenTrabajoId: number; cantidadAsignada: number; estado?: string } | null;
     approvedTotal?: number;

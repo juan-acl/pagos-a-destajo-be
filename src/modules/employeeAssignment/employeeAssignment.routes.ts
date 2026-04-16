@@ -4,6 +4,8 @@ import { EmployeeAssignmentController } from "./employeeAssignment.controller";
 const router: Router = Router();
 const ctrl = new EmployeeAssignmentController();
 
+router.get("/panels", ctrl.getPanels);
+router.post("/distribute", ctrl.distribute);
 router.get("/", ctrl.getAll);
 router.get("/:id", ctrl.getById);
 router.post("/", ctrl.create);

@@ -4,6 +4,8 @@ import { ProductionLotController } from "./productionLot.controller";
 const router: Router = Router();
 const ctrl = new ProductionLotController();
 
+router.get("/candidates", ctrl.getCandidates);
+router.post("/generate", ctrl.generate);
 router.get("/", ctrl.getAll);
 router.get("/:id", ctrl.getById);
 router.post("/", ctrl.create);

@@ -2,32 +2,36 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
-  ManyToOne,
-  JoinColumn,
+  RelationId,
 } from "typeorm";
 import { AsignacionEmpleado } from "./employeeAssignment.entity";
 
 @Entity("DES_REVISION_PRODUCCION")
 export class RevisionProduccion {
-  @PrimaryGeneratedColumn({ name: "RVP_ID", type: "number" })
-  id: number;
+  @PrimaryGeneratedColumn({
+    name: "RVP_ID",
+    type: "number",
+  })
+  id!: number;
 
   @Column({
     name: "RVP_CANTIDAD_RECIBIDA",
     type: "number",
     nullable: false,
   })
-  cantidadRecibida: number;
+  cantidadRecibida!: number;
 
   @Column({
     name: "RVP_CANTIDAD_APROBADA",
     type: "number",
     nullable: false,
   })
-  cantidadAprobada: number;
+  cantidadAprobada!: number;
 
   @Column({
     name: "RVP_ESTADO_REVISION",
@@ -35,7 +39,7 @@ export class RevisionProduccion {
     length: 50,
     nullable: false,
   })
-  estadoRevision: string;
+  estadoRevision!: string;
 
   @Column({
     name: "RVP_OBSERVACIONES",
@@ -50,28 +54,31 @@ export class RevisionProduccion {
     type: "date",
     nullable: false,
   })
-  fechaRevision: Date;
+  fechaRevision!: Date;
 
-  @ManyToOne(() => AsignacionEmpleado)
+  @ManyToOne(() => AsignacionEmpleado, { nullable: true })
   @JoinColumn({ name: "RVP_ASIGNACION_EMPLEADO_ID" })
-  asignacion: AsignacionEmpleado;
+  asignacion!: AsignacionEmpleado | null;
+
+  @RelationId((revision: RevisionProduccion) => revision.asignacion)
+  asignacionEmpleadoId!: number | null;
 
   @CreateDateColumn({
     name: "RVP_FECHA_CREACION",
     type: "timestamp",
   })
-  createdAt: Date;
+  fecha_creacion!: Date;
 
   @UpdateDateColumn({
     name: "RVP_FECHA_ACTUALIZACION",
     type: "timestamp",
   })
-  updatedAt: Date;
+  fecha_actualizacion!: Date;
 
   @DeleteDateColumn({
     name: "RVP_FECHA_ELIMINACION",
     type: "timestamp",
     nullable: true,
   })
-  deletedAt: Date | null;
+  fecha_eliminacion!: Date | null;
 }
