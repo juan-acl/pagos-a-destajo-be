@@ -71,8 +71,14 @@ export class PaymentController {
 
   previewByOrden = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { fechaInicio, fechaFin } = {
+        ...req.query as Record<string, string>,
+        ...req.body,
+      };
       const data = await this.service.previewPlanillaByOrden(
         Number(req.params.ordenId),
+        fechaInicio,
+        fechaFin,
       );
       HttpResponse.ok(res, data);
     } catch (e) {
@@ -86,8 +92,11 @@ export class PaymentController {
 
   generarByOrden = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { fechaInicio, fechaFin } = req.body as Record<string, string>;
       const data = await this.service.generarPlanillaByOrden(
         Number(req.params.ordenId),
+        fechaInicio,
+        fechaFin,
       );
       HttpResponse.created(res, data);
     } catch (e) {
