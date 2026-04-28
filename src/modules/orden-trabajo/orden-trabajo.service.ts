@@ -25,6 +25,7 @@ export class OrdenTrabajoService {
       pagoUnitario: dto.pagoUnitario,
       fechaLimite: dto.fechaLimite ? new Date(dto.fechaLimite) : null,
       estado: dto.estado ?? "activo",
+      modalidad: dto.modalidad ?? "DESTAJO",
     });
     return this.repo.save(nueva);
   }
@@ -38,6 +39,7 @@ export class OrdenTrabajoService {
       ...(dto.pagoUnitario && { pagoUnitario: dto.pagoUnitario }),
       ...(dto.fechaLimite && { fechaLimite: new Date(dto.fechaLimite) }),
       ...(dto.estado && { estado: dto.estado }),
+      ...(dto.modalidad && { modalidad: dto.modalidad }),
     });
   }
 
