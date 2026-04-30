@@ -56,25 +56,76 @@ export class EmpleadoService {
     });
   }
 
-async getPanelEmpleado(empleadoId: number) {
-  const miembro = await this.repo.findMiembroCuadrilla(empleadoId);
-  if (!miembro) return { miembro: null, asignacion: null, ultimoReporte: null, historial: [], pagos: [], yaReporto: false };
-
-  const asignacion = await this.repo.findAsignacionByCuadrilla(miembro.cuadrillaId);
-
-  const [ultimoReporte, historial, pagos] = await Promise.all([
-    asignacion ? this.repo.findUltimoReporte(asignacion.id) : null,
-    asignacion ? this.repo.findHistorialReportes(asignacion.id) : [],
-    this.repo.findPagosEmpleado(empleadoId),
-  ]);
-
-  const yaReporto = ultimoReporte?.estadoRevision === "PENDIENTE_REVISION";
-
-  return { miembro, asignacion, ultimoReporte, historial, pagos, yaReporto };
-}
-
   async remove(id: number) {
     await this.getById(id);
     return this.repo.update(id, { estado: "INACTIVO" });
+  }
+
+  async getPanelEmpleado(empleadoId: number): Promise<any> {
+    const miembro = await this.repo.findMiembroCuadrilla(empleadoId);
+    if (!miembro) return {
+      miembro: null, asignacionOrden: null, ordenTrabajo: null,
+      ultimoReporte: null, historial: [], pagos: [], yaReporto: false
+    };
+
+    const asignacionOrden = await this.repo.findOrdenActiva(miembro.cuadrillaId);
+    if (!asignacionOrden) return {
+      miembro, asignacionOrden: null, ordenTrabajo: null,
+      ultimoReporte: null, historial: [], pagos: [], yaReporto: false
+    };
+
+    const ordenTrabajo = await this.repo.findOrdenTrabajo(asignacionOrden.ordenTrabajoId);
+
+    if (!ordenTrabajo || ordenTrabajo.estado !== "EN_PROCESO" || ordenTrabajo.modalidad !== "DESTAJO") {
+      return {
+        miembro, asignacionOrden, ordenTrabajo,
+        ultimoReporte: null, historial: [], pagos: [], yaReporto: false,
+        ordenInvalida: true
+      };
+    }
+
+    const [ultimoReporte, historial, pagos] = await Promise.all([
+      this.repo.findUltimoReporte(asignacionOrden.id),
+      this.repo.findHistorialReportes(asignacionOrden.id),
+      this.repo.findPagosEmpleado(empleadoId),
+    ]);
+
+    const yaReporto = ultimoReporte?.estadoRevision === "PENDIENTE_REVISION";
+
+    return { miembro, asignacionOrden, ordenTrabajo, ultimoReporte, historial, pagos, yaReporto };
+  }
+
+  async createReporteOperario(empleadoId: number, cantidadRecibida: number): Promise<any> {
+    if (!cantidadRecibida || cantidadRecibida <= 0) {
+      throw new Error("La cantidad debe ser mayor a cero.");
+    }
+
+    if (cantidadRecibida > 9999) {
+      throw new Error("La cantidad parece incorrecta. Verifica el dato ingresado.");
+    }
+
+    const miembro = await this.repo.findMiembroCuadrilla(empleadoId);
+    if (!miembro) throw new Error("El empleado no pertenece a ninguna cuadrilla activa.");
+
+    const asignacionOrden = await this.repo.findOrdenActiva(miembro.cuadrillaId);
+    if (!asignacionOrden) throw new Error("No tienes una orden activa asignada.");
+
+    const ordenTrabajo = await this.repo.findOrdenTrabajo(asignacionOrden.ordenTrabajoId);
+    if (!ordenTrabajo) throw new Error("Orden de trabajo no encontrada.");
+
+    if (ordenTrabajo.estado !== "EN_PROCESO") {
+      throw new Error("La orden no está en proceso. No puedes reportar en este momento.");
+    }
+
+    if (ordenTrabajo.modalidad !== "DESTAJO") {
+      throw new Error("Esta orden no es de modalidad DESTAJO.");
+    }
+return this.repo.createReporteOperario({
+  cantidadRecibida,
+  cantidadAprobada: 0,
+  estadoRevision: "PENDIENTE_REVISION",
+  fechaRevision: new Date(),
+  cuadrillaId: miembro.cuadrillaId,
+});
   }
 }
