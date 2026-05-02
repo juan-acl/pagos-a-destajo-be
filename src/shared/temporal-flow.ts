@@ -112,7 +112,7 @@ export function enrichAssignment(
   };
 }
 
- export function enrichReview(
+export function enrichReview(
   review: RevisionProduccion,
   options?: {
     assignment?: ReturnType<typeof enrichAssignment> | null;

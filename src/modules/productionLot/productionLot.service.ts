@@ -1,11 +1,11 @@
 import { IsNull } from "typeorm";
 import { BadRequestError, NotFoundError } from "../../error/customErrors";
 import { LoteProduccionRepository } from "../../repository/productionLot.repository";
-import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
 import {
   CreateProductionLotDtoType,
   UpdateProductionLotDtoType,
 } from "./productionLot.dto";
+import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
 import { EmployeeAssignmentService } from "../employeeAssignment/employeeAssignment.service";
 import { ProductionReviewService } from "../productionReview/productionReview.service";
 import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
@@ -31,7 +31,7 @@ export class ProductionLotService {
       this.reviewService.getAll() as Promise<any[]>,
       this.repo.findAll({
         where: { fechaEliminacion: IsNull() } as any,
-        relations: { revisionProduccionId: { asignacion: true } } as any,
+        relations: { revisionProduccionId: { asignacionEmpleadoId: true } } as any,
       }),
     ]);
 
@@ -62,11 +62,11 @@ export class ProductionLotService {
       );
       const openLot = lots.find((lot) => {
         const relatedReview: any = lot.revisionProduccionId;
-        const relatedAssignmentId = Number(relatedReview?.asignacion?.id ?? relatedReview?.asignacionEmpleadoId);
+        const relatedAssignmentId = Number(relatedReview?.asignacionEmpleadoId?.id ?? relatedReview?.asignacionEmpleadoId);
         const relatedAssignment = assignments.find((item) => item.id === relatedAssignmentId);
         return (
           relatedAssignment?.asignacionOrdenCuadrillaId === aoc.id &&
-          normalizeState(lot.estado) === "EN_PROCESO"
+          normalizeState(lot.estado) === "ACTIVO"
         );
       });
 
@@ -88,7 +88,7 @@ export class ProductionLotService {
         blockers.push("La orden está vencida.");
       }
       if (openLot) {
-        blockers.push("Ya existe un lote abierto EN_PROCESO para esta orden y cuadrilla.");
+        blockers.push("Ya existe un lote abierto ACTIVO para esta orden y cuadrilla.");
       }
 
       return {
@@ -202,7 +202,7 @@ export class ProductionLotService {
         numeroLote,
         totalPiezasAprobadas: candidate.totalAprobado,
         fechaEnvio: dto.fechaEnvio ?? new Date(),
-        estado: normalizeState(dto.estado ?? "EN_PROCESO"),
+        estado: normalizeState(dto.estado ?? "ACTIVO"),
         revisionProduccionId: { id: representativeReview.id } as any,
       }),
     );
@@ -243,13 +243,12 @@ export class ProductionLotService {
       numeroLote: dto.numeroLote,
       totalPiezasAprobadas: dto.totalPiezasAprobadas,
       fechaEnvio: dto.fechaEnvio ?? new Date(),
-      estado: normalizeState(dto.estado ?? "EN_PROCESO"),
+      estado: normalizeState(dto.estado ?? "ACTIVO"),
       revisionProduccionId: { id: dto.revisionProduccionId } as any,
     });
 
     const saved = await this.repo.save(newLot);
     return this.getById(saved.id);
-  
   }
 
   async update(id: number, dto: UpdateProductionLotDtoType) {
@@ -273,7 +272,7 @@ export class ProductionLotService {
       ...(dto.fechaEnvio !== undefined && { fechaEnvio: dto.fechaEnvio }),
       ...(dto.estado !== undefined && { estado: normalizeState(dto.estado) }),
       ...(dto.revisionProduccionId !== undefined && {
-        revisionProduccionId: { id: dto.revisionProduccionId } as any
+        revisionProduccionId: { id: dto.revisionProduccionId } as any,
       }),
     } as any);
 
@@ -289,4 +288,3 @@ export class ProductionLotService {
     return this.enrichLots();
   }
 }
-

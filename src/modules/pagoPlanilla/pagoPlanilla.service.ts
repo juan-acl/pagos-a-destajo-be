@@ -27,7 +27,6 @@ export class PaymentService {
       where: { id },
       relations: { loteProduccion: true },
     });
-
     if (!planilla) throw new NotFoundError("Planilla no encontrada");
     return planilla;
   }
@@ -115,56 +114,7 @@ export class PaymentService {
     planilla.fechaActualizacion = new Date();
     await this.planillaRepo.save(planilla);
 
-    await this.inactivarAsignacionesDePlanilla(planilla.id);
-
     return planilla;
-  }
-
-  private async inactivarAsignacionesDePlanilla(planillaId: number) {
-    const planilla = await this.planillaRepo.findOne({
-      where: { id: planillaId },
-      relations: { loteProduccion: true },
-    });
-
-    if (!planilla) {
-      throw new NotFoundError("Planilla no encontrada");
-    }
-
-    const lote = planilla.loteProduccion as LoteProduccion;
-
-    const loteConRevision = await this.loteRepo.findOne({
-      where: { id: lote.id },
-      relations: { revisionProduccionId: true },
-    });
-
-    const revision = loteConRevision?.revisionProduccionId;
-    if (!revision) {
-      throw new NotFoundError("El lote no tiene revisión asociada");
-    }
-
-    const revisionCompleta = await this.revisionRepo.findOne({
-      where: { id: revision.id } as any,
-      relations: { asignacion: { cuadrillaId: true } } as any,
-    });
-
-    const asignacionBase = revisionCompleta?.asignacion;
-    if (!asignacionBase) {
-      throw new NotFoundError("La revisión no tiene asignación relacionada");
-    }
-
-    const cuadrillaId = (asignacionBase.cuadrillaId as any)?.id;
-    if (!cuadrillaId) {
-      throw new NotFoundError("No se encontró la cuadrilla de la asignación");
-    }
-
-    const asignaciones = await this.asignacionEmpleadoRepo.findAll({
-      where: { cuadrillaId: { id: cuadrillaId } } as any,
-    });
-
-    for (const asignacion of asignaciones) {
-      asignacion.estado = "INACTIVA";
-      await this.asignacionEmpleadoRepo.save(asignacion);
-    }
   }
 
   async rechazarPlanilla(planillaId: number, observaciones: string) {
@@ -217,39 +167,15 @@ export class PaymentService {
   }
 
   async previewPlanillaByOrden(ordenId: number) {
-    const orden = await this.ordenRepo.findOne({ where: { id: ordenId } });
-
-    if (!orden) {
-      throw new NotFoundError(`Orden de trabajo ${ordenId} no encontrada`);
-    }
-
-    if (orden.estado !== "COMPLETADA") {
-      throw new BadRequestError(
-        `La orden ${ordenId} no está COMPLETADA`,
-      );
-    }
-
     return this.calcularDetallePorOrden(ordenId);
   }
 
   async generarPlanillaByOrden(ordenId: number) {
-    const orden = await this.ordenRepo.findOne({ where: { id: ordenId } });
-
-    if (!orden) {
-      throw new NotFoundError(`Orden de trabajo ${ordenId} no encontrada`);
-    }
-
-    if (orden.estado !== "COMPLETADA") {
-      throw new BadRequestError(
-        `La orden ${ordenId} no está COMPLETADA`,
-      );
-    }
-
     const { detalle, montoTotal } = await this.calcularDetallePorOrden(ordenId);
 
-    if (detalle.length === 0 || montoTotal <= 0) {
+    if (detalle.length === 0) {
       throw new BadRequestError(
-        "La orden no tiene revisiones aprobadas con monto pagable",
+        "No hay asignaciones de empleados para esta orden",
       );
     }
 
@@ -278,7 +204,6 @@ export class PaymentService {
       relations: { revisionProduccionId: true },
     });
     const revision = loteConRevision?.revisionProduccionId;
-
     if (!revision) {
       throw new NotFoundError(
         "El lote no tiene revisión de producción asociada",
@@ -286,15 +211,13 @@ export class PaymentService {
     }
 
     const revConAsig = await this.revisionRepo.findOne({
-      where: { id: revision.id } as any,
-      relations: { asignacion: { cuadrillaId: true } } as any,
+      where: { id: revision.id },
+      relations: { asignacionEmpleadoId: { cuadrillaId: true } },
     });
-    const asignacionBase = revConAsig?.asignacion;
-
+    const asignacionBase = revConAsig?.asignacionEmpleadoId;
     if (!asignacionBase) {
       throw new NotFoundError("La revisión no tiene asignación de empleado");
     }
-
     const cuadrillaId = (asignacionBase.cuadrillaId as any)?.id as number;
 
     const asignacionOrden = await this.asignacionRepo.findOne({
@@ -307,42 +230,37 @@ export class PaymentService {
       : null;
     const pagoUnitario = Number(orden?.pagoUnitario ?? 0);
 
-    const asignaciones = await this.asignacionEmpleadoRepo.findAll({
-      where: { cuadrillaId: { id: cuadrillaId } } as any,
-    });
+    const { miembrosActivos, asignacionesActuales } =
+      await this.getAsignacionesActualesDeCuadrilla(cuadrillaId);
 
-    const asignacionIds = asignaciones.map((a) => a.id);
+    const asignacionIds = asignacionesActuales.map((a) => a.id);
     const revisiones = await this.revisionRepo.findAll({
       where: {
         estadoRevision: "APROBADO",
-        asignacion: { id: In(asignacionIds) as any },
-      } as any,
-      relations: { asignacion: true } as any,
+        asignacionEmpleadoId: In(asignacionIds) as any,
+      },
+      relations: { asignacionEmpleadoId: true },
     });
 
-    const miembros =
-      await this.miembroCuadrillaRepo.findByCuadrilla(cuadrillaId);
-
-    const detalle: DetalleEmpleado[] = asignaciones.map((asig, i) => {
-      const miembro = miembros[i];
+    const detalle: DetalleEmpleado[] = asignacionesActuales.map((asig, i) => {
+      const miembro = miembrosActivos[i];
       const emp = miembro?.empleado;
       const nombre = emp
         ? `${emp.primerNombre} ${emp.primerApellido}`
-        : `Empleado-${asig.id}`;
+        : `Empleado-${miembro?.empleadoId ?? asig.id}`;
 
       const rev = revisiones.find(
-        (r) =>
-          Number((r.asignacion as any)?.id ?? r.asignacionEmpleadoId) === asig.id,
+        (r) => (r.asignacionEmpleadoId as any)?.id === asig.id,
       );
-      const cantidadAprobada = rev?.cantidadAprobada ?? 0;
+      const cantidadAprobada = Number(rev?.cantidadAprobada ?? 0);
 
       return {
         empleadoId: miembro?.empleadoId ?? asig.id,
         nombreEmpleado: nombre,
-        metaIndividual: asig.metaIndividual,
+        metaIndividual: Number(asig.metaIndividual ?? 0),
         cantidadAprobada,
         pagoUnitario,
-        montoMeta: asig.metaIndividual * pagoUnitario,
+        montoMeta: Number(asig.metaIndividual ?? 0) * pagoUnitario,
         montoRealizado: cantidadAprobada * pagoUnitario,
       };
     });
@@ -353,16 +271,14 @@ export class PaymentService {
 
   async getOrdenesDisponibles() {
     const ordenes = await this.ordenRepo.findAll({
-      where: { estado: "COMPLETADA" },
+      where: { estado: "activo" },
       order: { fechaCreacion: "DESC" } as any,
     });
-
     if (ordenes.length === 0) return [];
 
     const planillas = await this.planillaRepo.findAll({
       relations: { loteProduccion: true },
     });
-
     if (planillas.length === 0) return ordenes;
 
     const loteIdsConPlanilla = planillas
@@ -380,21 +296,23 @@ export class PaymentService {
     if (revisionIds.length === 0) return ordenes;
 
     const revisiones = await this.revisionRepo.findAll({
-      where: { id: In(revisionIds) } as any,
-      relations: { asignacion: { cuadrillaId: true } } as any,
+      where: { id: In(revisionIds) },
+      relations: { asignacionEmpleadoId: { cuadrillaId: true } },
     });
 
     const cuadrillaIds = [
       ...new Set(
         revisiones
-          .map((r) => (r.asignacion?.cuadrillaId as any)?.id as number)
+          .map(
+            (r) => (r.asignacionEmpleadoId?.cuadrillaId as any)?.id as number,
+          )
           .filter(Boolean),
       ),
     ];
     if (cuadrillaIds.length === 0) return ordenes;
 
     const asignacionesOrden = await this.asignacionRepo.findAll({
-      where: { cuadrillaId: In(cuadrillaIds) as any } as any,
+      where: { cuadrillaId: In(cuadrillaIds) } as any,
     });
 
     const ordenIdsConPlanilla = new Set(
@@ -420,56 +338,39 @@ export class PaymentService {
     }
 
     const { cuadrillaId } = asignacionOrden;
-    const pagoUnitario = Number(orden.pagoUnitario);
+    const pagoUnitario = Number(orden.pagoUnitario ?? 0);
 
-    const miembros =
-      await this.miembroCuadrillaRepo.findByCuadrilla(cuadrillaId);
+    const { miembrosActivos, asignacionesActuales } =
+      await this.getAsignacionesActualesDeCuadrilla(cuadrillaId);
 
-    const asignaciones = await this.asignacionEmpleadoRepo.findAll({
-      where: { cuadrillaId: { id: cuadrillaId } } as any,
-    });
-
-    if (asignaciones.length === 0) {
-      throw new BadRequestError(
-        `No hay asignaciones de empleados para la cuadrilla ${cuadrillaId}`,
-      );
-    }
-
-    const asignacionIds = asignaciones.map((a) => a.id);
+    const asignacionIds = asignacionesActuales.map((a) => a.id);
     const revisiones = await this.revisionRepo.findAll({
-      where: [
-        {
-          estadoRevision: "APROBADO",
-          asignacion: { id: In(asignacionIds) as any },
-        },
-        {
-          estadoRevision: "APROBADA",
-          asignacion: { id: In(asignacionIds) as any },
-        },
-      ] as any,
-      relations: { asignacion: true } as any,
+      where: {
+        estadoRevision: "APROBADO",
+        asignacionEmpleadoId: In(asignacionIds) as any,
+      },
+      relations: { asignacionEmpleadoId: true },
     });
 
-    const detalle: DetalleEmpleado[] = asignaciones.map((asig, i) => {
-      const miembro = miembros[i];
+    const detalle: DetalleEmpleado[] = asignacionesActuales.map((asig, i) => {
+      const miembro = miembrosActivos[i];
       const emp = miembro?.empleado;
       const nombre = emp
         ? `${emp.primerNombre} ${emp.primerApellido}`
-        : `Empleado-${asig.id}`;
+        : `Empleado-${miembro?.empleadoId ?? asig.id}`;
 
       const rev = revisiones.find(
-        (r) =>
-          Number((r.asignacion as any)?.id ?? r.asignacionEmpleadoId) === asig.id,
+        (r) => (r.asignacionEmpleadoId as any)?.id === asig.id,
       );
-      const cantidadAprobada = rev?.cantidadAprobada ?? 0;
+      const cantidadAprobada = Number(rev?.cantidadAprobada ?? 0);
 
       return {
         empleadoId: miembro?.empleadoId ?? asig.id,
         nombreEmpleado: nombre,
-        metaIndividual: asig.metaIndividual,
+        metaIndividual: Number(asig.metaIndividual ?? 0),
         cantidadAprobada,
         pagoUnitario,
-        montoMeta: asig.metaIndividual * pagoUnitario,
+        montoMeta: Number(asig.metaIndividual ?? 0) * pagoUnitario,
         montoRealizado: cantidadAprobada * pagoUnitario,
       };
     });
@@ -478,69 +379,47 @@ export class PaymentService {
     return { detalle, montoTotal, pagoUnitario };
   }
 
-private async getLoteByOrden(ordenId: number): Promise<LoteProduccion> {
-  const asignacionOrden = await this.asignacionRepo.findOne({
-    where: { ordenTrabajoId: ordenId },
-  });
+  private async getLoteByOrden(ordenId: number): Promise<LoteProduccion> {
+    const asignacionOrden = await this.asignacionRepo.findOne({
+      where: { ordenTrabajoId: ordenId },
+    });
+    if (!asignacionOrden) {
+      throw new NotFoundError(
+        `No existe asignación de cuadrilla para la orden ${ordenId}`,
+      );
+    }
 
-  if (!asignacionOrden) {
-    throw new NotFoundError(
-      `No existe asignación de cuadrilla para la orden ${ordenId}`,
-    );
+    const asignacionEmpleado = await this.asignacionEmpleadoRepo.findOne({
+      where: { cuadrillaId: { id: asignacionOrden.cuadrillaId } } as any,
+    });
+    if (!asignacionEmpleado) {
+      throw new NotFoundError(
+        `No existe asignación de empleado para la cuadrilla ${asignacionOrden.cuadrillaId}`,
+      );
+    }
+
+    const revision = await this.revisionRepo.findOne({
+      where: { asignacionEmpleadoId: { id: asignacionEmpleado.id } } as any,
+    });
+
+    if (!revision) {
+      throw new NotFoundError(
+        `No existe revisión de producción para la asignación ${asignacionEmpleado.id}`,
+      );
+    }
+
+    const lote = await this.loteRepo.findOne({
+      where: { revisionProduccionId: { id: revision.id } } as any,
+    });
+
+    if (!lote) {
+      throw new NotFoundError(
+        `No existe lote de producción vinculado a la revisión ${revision.id}`,
+      );
+    }
+
+    return lote;
   }
-
-  const asignacionesEmpleado = await this.asignacionEmpleadoRepo.findAll({
-    where: { cuadrillaId: { id: asignacionOrden.cuadrillaId } } as any,
-  });
-
-  if (asignacionesEmpleado.length === 0) {
-    throw new NotFoundError(
-      `No existen asignaciones de empleados para la cuadrilla ${asignacionOrden.cuadrillaId}`,
-    );
-  }
-
-  const asignacionIds = asignacionesEmpleado.map((a) => a.id);
-
-  const revisiones = await this.revisionRepo.findAll({
-    where: [
-      {
-        estadoRevision: "APROBADO",
-        asignacion: { id: In(asignacionIds) as any },
-      },
-      {
-        estadoRevision: "APROBADA",
-        asignacion: { id: In(asignacionIds) as any },
-      },
-    ] as any,
-    relations: { asignacion: true } as any,
-  });
-
-  if (revisiones.length === 0) {
-    throw new NotFoundError(
-      `No existen revisiones aprobadas para la orden ${ordenId}`,
-    );
-  }
-
-  const revisionIds = revisiones.map((r) => r.id);
-
-  const lotes = await this.loteRepo.findAll({
-    where: {
-      revisionProduccionId: { id: In(revisionIds) as any },
-    } as any,
-    relations: { revisionProduccionId: true } as any,
-  });
-
-  if (lotes.length === 0) {
-    throw new NotFoundError(
-      `No existe lote vinculado a revisiones aprobadas para la orden ${ordenId}`,
-    );
-  }
-
-  const loteAprobado =
-    lotes.find((l) => String(l.estado).toUpperCase() === "APROBADO") ?? lotes[0];
-
-  return loteAprobado;
-}
 
   private async validarLoteParaPlanilla(loteId: number) {
     const lote = await this.loteRepo.findOne({
@@ -570,25 +449,21 @@ private async getLoteByOrden(ordenId: number): Promise<LoteProduccion> {
 
   private async calcularDetalle(lote: LoteProduccion) {
     const loteConRevision = await this.loteRepo.findOne({
-      where: { id: lote.id } as any,
-      relations: { revisionProduccionId: true } as any,
+      where: { id: lote.id },
+      relations: {
+        revisionProduccionId: {
+          asignacionEmpleadoId: {
+            cuadrillaId: true,
+          },
+        },
+      } as any,
     });
 
-    const revisionBase = loteConRevision?.revisionProduccionId;
-    if (!revisionBase) {
-      throw new NotFoundError("El lote no tiene revisión asociada");
-    }
+    const revisionBase = loteConRevision?.revisionProduccionId as any;
+    const cuadrillaId = revisionBase?.asignacionEmpleadoId?.cuadrillaId?.id;
 
-    const revisionCompleta = await this.revisionRepo.findOne({
-      where: { id: revisionBase.id } as any,
-      relations: { asignacion: { cuadrillaId: true } } as any,
-    });
-
-    const cuadrillaId = (revisionCompleta?.asignacion?.cuadrillaId as any)?.id;
     if (!cuadrillaId) {
-      throw new NotFoundError(
-        "No se pudo determinar la cuadrilla del lote para calcular la planilla",
-      );
+      throw new NotFoundError("No se pudo determinar la cuadrilla del lote");
     }
 
     const asignacionOrden = await this.asignacionRepo.findOne({
@@ -603,43 +478,42 @@ private async getLoteByOrden(ordenId: number): Promise<LoteProduccion> {
 
     const pagoUnitario = Number(ordenTrabajo?.pagoUnitario ?? 0);
 
-    const asignaciones = await this.asignacionEmpleadoRepo.findAll({
-      where: { cuadrillaId: { id: cuadrillaId } } as any,
-    });
+    const { miembrosActivos, asignacionesActuales } =
+      await this.getAsignacionesActualesDeCuadrilla(cuadrillaId);
 
-    const asignacionIds = asignaciones.map((a) => a.id);
+    const asignacionIds = asignacionesActuales.map((a) => a.id);
 
     const revisiones = await this.revisionRepo.findAll({
       where: {
         estadoRevision: "APROBADO",
-        asignacion: { id: In(asignacionIds) as any },
-      } as any,
-      relations: { asignacion: true } as any,
+        asignacionEmpleadoId: In(asignacionIds) as any,
+      },
+      relations: {
+        asignacionEmpleadoId: true,
+      },
     });
 
-    const miembros =
-      await this.miembroCuadrillaRepo.findByCuadrilla(cuadrillaId);
-
-    const detalle: DetalleEmpleado[] = asignaciones.map((asig, i) => {
-      const miembro = miembros[i];
+    const detalle: DetalleEmpleado[] = asignacionesActuales.map((asig, i) => {
+      const miembro = miembrosActivos[i];
       const emp = miembro?.empleado;
+
       const nombre = emp
         ? `${emp.primerNombre} ${emp.primerApellido}`
-        : `Empleado-${asig.id}`;
+        : `Empleado-${miembro?.empleadoId ?? asig.id}`;
 
       const rev = revisiones.find(
-        (r) =>
-          Number((r.asignacion as any)?.id ?? r.asignacionEmpleadoId) === asig.id,
+        (r) => (r.asignacionEmpleadoId as any)?.id === asig.id,
       );
-      const cantidadAprobada = rev?.cantidadAprobada ?? 0;
+
+      const cantidadAprobada = Number(rev?.cantidadAprobada ?? 0);
 
       return {
         empleadoId: miembro?.empleadoId ?? asig.id,
         nombreEmpleado: nombre,
-        metaIndividual: asig.metaIndividual,
+        metaIndividual: Number(asig.metaIndividual ?? 0),
         cantidadAprobada,
         pagoUnitario,
-        montoMeta: asig.metaIndividual * pagoUnitario,
+        montoMeta: Number(asig.metaIndividual ?? 0) * pagoUnitario,
         montoRealizado: cantidadAprobada * pagoUnitario,
       };
     });
@@ -649,55 +523,108 @@ private async getLoteByOrden(ordenId: number): Promise<LoteProduccion> {
     return { detalle, montoTotal, pagoUnitario };
   }
 
+  private async getAsignacionesActualesDeCuadrilla(cuadrillaId: number) {
+    const miembros = await this.miembroCuadrillaRepo.findByCuadrilla(cuadrillaId);
+
+    const miembrosActivos = miembros.filter(
+      (m: any) => String(m.estado ?? "ACTIVO").toUpperCase() === "ACTIVO",
+    );
+
+    if (miembrosActivos.length === 0) {
+      throw new BadRequestError(
+        `La cuadrilla ${cuadrillaId} no tiene miembros activos`,
+      );
+    }
+
+    const asignacionesHistoricas = await this.asignacionEmpleadoRepo.findAll({
+      where: {
+        cuadrillaId: { id: cuadrillaId },
+        estado: "ACTIVO",
+      } as any,
+      order: { id: "DESC" } as any,
+    });
+
+    if (asignacionesHistoricas.length === 0) {
+      throw new BadRequestError(
+        `No hay asignaciones activas para la cuadrilla ${cuadrillaId}`,
+      );
+    }
+
+    const asignacionesActuales = asignacionesHistoricas
+      .slice(0, miembrosActivos.length)
+      .reverse();
+
+    return {
+      miembrosActivos,
+      asignacionesActuales,
+    };
+  }
+
   private validarEvidencia(evidencia: EvidenciaPagoType) {
-    switch (evidencia.metodoPago) {
-      case "TRANSFERENCIA":
-        if (
-          !evidencia.bancoDestino ||
-          !evidencia.numeroCuenta ||
-          !evidencia.numeroTransferencia
-        ) {
-          throw new BadRequestError(
-            "Para transferencia se requiere: bancoDestino, numeroCuenta, numeroTransferencia",
-          );
-        }
-        break;
+    if (!evidencia.metodoPago) {
+      throw new BadRequestError("El método de pago es obligatorio");
+    }
 
-      case "CHEQUE":
-        if (
-          !evidencia.numeroCheque ||
-          !evidencia.bancoEmisor ||
-          !evidencia.fechaCheque
-        ) {
-          throw new BadRequestError(
-            "Para cheque se requiere: numeroCheque, bancoEmisor, fechaCheque",
-          );
-        }
-        break;
+    if (evidencia.montoConfirmado === undefined || evidencia.montoConfirmado < 0) {
+      throw new BadRequestError("El monto confirmado es inválido");
+    }
 
-      case "EFECTIVO":
-        if (!evidencia.responsableEntrega || !evidencia.fechaEntrega) {
-          throw new BadRequestError(
-            "Para efectivo se requiere: responsableEntrega, fechaEntrega",
-          );
-        }
-        break;
+    if (evidencia.metodoPago === "TRANSFERENCIA") {
+      if (!evidencia.numeroTransferencia?.trim()) {
+        throw new BadRequestError(
+          "El número de transferencia es obligatorio",
+        );
+      }
+      if (!evidencia.bancoDestino?.trim()) {
+        throw new BadRequestError("El banco destino es obligatorio");
+      }
+    }
 
-      default:
-        throw new BadRequestError("Método de pago no válido");
+    if (evidencia.metodoPago === "DEPOSITO") {
+      if (!evidencia.bancoDestino?.trim()) {
+        throw new BadRequestError("El banco destino es obligatorio");
+      }
+      if (!evidencia.referenciaDeposito?.trim()) {
+        throw new BadRequestError(
+          "La referencia del depósito es obligatoria",
+        );
+      }
+    }
+
+    if (evidencia.metodoPago === "CHEQUE") {
+      if (!evidencia.numeroCheque?.trim()) {
+        throw new BadRequestError("El número de cheque es obligatorio");
+      }
+      if (!evidencia.nombreBeneficiario?.trim()) {
+        throw new BadRequestError(
+          "El nombre del beneficiario es obligatorio",
+        );
+      }
     }
   }
 
-  private buildDescripcionEvidencia(evidencia: EvidenciaPagoType): string {
-    switch (evidencia.metodoPago) {
-      case "TRANSFERENCIA":
-        return `Transferencia: ${evidencia.bancoDestino} | Cuenta: ${evidencia.numeroCuenta} | Ref: ${evidencia.numeroTransferencia}`;
-      case "CHEQUE":
-        return `Cheque: ${evidencia.numeroCheque} | Banco: ${evidencia.bancoEmisor} | Fecha: ${evidencia.fechaCheque}`;
-      case "EFECTIVO":
-        return `Efectivo: Responsable: ${evidencia.responsableEntrega} | Fecha: ${evidencia.fechaEntrega}`;
-      default:
-        return "Pago registrado";
+  private buildDescripcionEvidencia(evidencia: EvidenciaPagoType) {
+    const partes = [`Pago ejecutado por ${evidencia.metodoPago}`];
+
+    if (evidencia.numeroTransferencia) {
+      partes.push(`Transferencia: ${evidencia.numeroTransferencia}`);
     }
+    if (evidencia.bancoDestino) {
+      partes.push(`Banco: ${evidencia.bancoDestino}`);
+    }
+    if (evidencia.referenciaDeposito) {
+      partes.push(`Referencia depósito: ${evidencia.referenciaDeposito}`);
+    }
+    if (evidencia.numeroCheque) {
+      partes.push(`Cheque: ${evidencia.numeroCheque}`);
+    }
+    if (evidencia.nombreBeneficiario) {
+      partes.push(`Beneficiario: ${evidencia.nombreBeneficiario}`);
+    }
+    if (evidencia.observaciones) {
+      partes.push(`Obs: ${evidencia.observaciones}`);
+    }
+
+    return partes.join(" | ");
   }
 }

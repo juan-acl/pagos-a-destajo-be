@@ -5,6 +5,7 @@ import { EmployeeAssignmentService } from "./employeeAssignment.service";
 import {
   CreateEmployeeAssignmentDto,
   DistributeEmployeeAssignmentsDto,
+  SetPaymentModalityDto,
   UpdateEmployeeAssignmentDto,
 } from "./employeeAssignment.dto";
 
@@ -24,6 +25,17 @@ export class EmployeeAssignmentController {
     try {
       const data = await this.service.getPanels();
       HttpResponse.ok(res, data);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+
+  setModality = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dto = SetPaymentModalityDto.parse(req.body);
+      const data = await this.service.setPaymentModality(dto, req.headers["x-user-role"] as any);
+      HttpResponse.created(res, data, "Modalidad de pago registrada correctamente");
     } catch (e) {
       next(e);
     }
