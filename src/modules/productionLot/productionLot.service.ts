@@ -115,6 +115,8 @@ export class ProductionLotService {
         where: { fechaEliminacion: IsNull() } as any,
         relations: { revisionProduccionId: true } as any,
         order: { id: "DESC" as any },
+        take: 10,
+        skip: 0,
       }),
       this.reviewService.getAll() as Promise<any[]>,
       this.buildCandidates(),
