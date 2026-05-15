@@ -67,6 +67,8 @@ export class PaymentService {
     return this.planillaRepo.findAll({
       relations: { loteProduccion: true },
       order: { fechaCreacion: "DESC" },
+      take: 10,
+      skip: 0,
     });
   }
 

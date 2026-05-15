@@ -21,3 +21,9 @@ export class BadRequestError extends AppError {
     super(message, 400);
   }
 }
+
+export class AlreadyExistsError extends AppError {
+  constructor(message: string = "Already exists") {
+    super(message, 409);
+  }
+}
