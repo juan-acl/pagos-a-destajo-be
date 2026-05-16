@@ -14,6 +14,7 @@ import { RevisionProduccion } from "../entity/productionReview.entity";
 import { EmpleadoEntity } from "../entity/empleado.entity";
 import { CuadrillaEntity } from "../entity/cuadrilla.entity";
 import { MiembroCuadrillaEntity } from "../entity/miembro-cuadrilla.entity";
+import { RegistroDiario } from "../entity/registroDiario.entity";
 
 export const AppDataSource = new DataSource({
   type: "oracle",
@@ -43,6 +44,7 @@ export const AppDataSource = new DataSource({
     EmpleadoEntity,
     CuadrillaEntity,
     MiembroCuadrillaEntity,
+    RegistroDiario,
   ],
 
   migrations: ["src/migrations/*.ts"],

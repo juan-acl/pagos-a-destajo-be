@@ -5,12 +5,31 @@ export type PayType = z.infer<typeof zPay>;
 
 export const zStatusPay = z.enum([
   "PAGADO",
+  "PAGO_REALIZADO",
   "RECHAZADO",
   "PENDIENTE",
   "INACTIVO",
   "EN_REVISION",
   "PROCESANDO",
 ]);
+
+export type Modalidad = "DESTAJO" | "PAGO_POR_DIAS";
+
+export type EstadoRegistroDiario =
+  | "PROGRAMADO"
+  | "HABILITADO_PARA_PAGO"
+  | "PAGADO";
+
+export interface DetalleEmpleadoDia {
+  empleadoId: number;
+  nombreEmpleado: string;
+  montoDiario: number;
+  fechaInicio: string;
+  fechaFin: string;
+  diasReconocidos: number;
+  montoIndividual: number;
+  modalidad: "PAGO_POR_DIAS";
+}
 
 export interface DetalleEmpleado {
   empleadoId: number;
@@ -20,6 +39,7 @@ export interface DetalleEmpleado {
   pagoUnitario: number;
   montoMeta: number;
   montoRealizado: number;
+  modalidad: Modalidad;
 }
 
 interface EvidenciaTransferencia {
