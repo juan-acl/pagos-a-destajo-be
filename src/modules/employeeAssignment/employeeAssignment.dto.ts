@@ -40,7 +40,7 @@ export const SetPaymentModalityDto = z
 // Se conserva para compatibilidad con pantallas/rutas anteriores. Ya no debe usarse para crear metas individuales.
 export const DistributeEmployeeAssignmentsDto = z.object({
   asignacionOrdenCuadrillaId: z.coerce.number().int().positive(),
-  modo: z.enum(["AUTOMATICA", "MANUAL"]).optional(),
+  modo: z.enum(["AUTOMATICA", "MANUAL", "SINCRONIZAR"]).optional().default("SINCRONIZAR"),
   metas: z
     .array(
       z.object({

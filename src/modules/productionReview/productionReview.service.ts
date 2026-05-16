@@ -14,17 +14,21 @@ import {
 } from "../../shared/temporal-flow";
 import { AsignacionEmpleadoRepository } from "../../repository/employeeAssignment.repository";
 import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
+import { OrdenTrabajoRepository } from "../../repository/orden-trabajo.repository";
+
+const VALID_ORDER_STATES = new Set(["EN_PROCESO", "ACTIVA", "ACTIVO"]);
 
 export class ProductionReviewService {
   private readonly repo = new RevisionProduccionRepository();
   private readonly assignmentService = new EmployeeAssignmentService();
   private readonly assignmentRepo = new AsignacionEmpleadoRepository();
   private readonly orderAssignmentRepo = new AsignacionOrdenCuadrillaRepository();
+  private readonly ordenRepo = new OrdenTrabajoRepository();
 
   private async getRawById(id: number) {
     const revision = await this.repo.findOne({
       where: { id, fecha_eliminacion: IsNull() } as any,
-      relations: { asignacionEmpleadoId: true },
+      relations: { asignacionEmpleadoId: true } as any,
     });
 
     if (!revision) {
@@ -38,16 +42,16 @@ export class ProductionReviewService {
     const [reviews, assignments] = await Promise.all([
       this.repo.findAll({
         where: { fecha_eliminacion: IsNull() } as any,
-        relations: { asignacionEmpleadoId: true },
+        relations: { asignacionEmpleadoId: true } as any,
         order: { id: "DESC" as any },
       }),
-      this.assignmentService.getAll(),
+      this.assignmentService.getAll() as Promise<any[]>,
     ]);
 
-    const assignmentMap = new Map(assignments.map((item: any) => [item.id, item]));
+    const assignmentMap = new Map(assignments.map((item: any) => [Number(item.id), item]));
 
-    return reviews.map((review) => {
-      const assignmentId = Number((review.asignacionEmpleadoId as any)?.id ?? review.asignacionEmpleadoId);
+    return reviews.map((review: any) => {
+      const assignmentId = Number(review.asignacionEmpleadoId?.id ?? review.asignacionEmpleadoId);
       return enrichReview(review, {
         assignment: assignmentMap.get(assignmentId) ?? null,
       });
@@ -56,58 +60,74 @@ export class ProductionReviewService {
 
   private async getAssignmentContext(asignacionEmpleadoId: number) {
     const assignments = await this.assignmentService.getAll() as any[];
-    const assignment = assignments.find((item) => item.id === asignacionEmpleadoId);
+    const assignment = assignments.find((item) => Number(item.id) === Number(asignacionEmpleadoId));
     if (!assignment) {
       throw new BadRequestError("La asignación de empleado indicada no existe.");
     }
 
     const rawAssignment = await this.assignmentRepo.findOne({
       where: { id: asignacionEmpleadoId, fecha_eliminacion: IsNull() } as any,
-      relations: { cuadrillaId: true },
+      relations: { cuadrillaId: true } as any,
     });
 
     if (!rawAssignment) {
       throw new BadRequestError("La asignación de empleado indicada no existe.");
     }
 
-    const aocId = Number((assignment as any).asignacionOrdenCuadrillaId);
+    const aocId = Number(assignment.asignacionOrdenCuadrillaId);
     const aoc = Number.isFinite(aocId) ? await this.orderAssignmentRepo.findById(aocId) : null;
+    const orden = aoc ? await this.ordenRepo.findById(aoc.ordenTrabajoId) : null;
 
-    return { assignment, rawAssignment, aoc };
+    return { assignment, rawAssignment, aoc, orden };
   }
 
   private async getApprovedTotalForAoc(aocId: number, excludingReviewId?: number) {
     const reviews = await this.buildEnrichedReviews();
     return reviews
-      .filter((item: any) => item.id !== excludingReviewId)
-      .filter((item: any) => item.assignment?.asignacionOrdenCuadrillaId === aocId)
+      .filter((item: any) => Number(item.id) !== Number(excludingReviewId))
+      .filter((item: any) => Number(item.assignment?.asignacionOrdenCuadrillaId) === Number(aocId))
       .filter((item: any) => normalizeState(item.estadoRevision) === "APROBADA")
       .reduce((acc: number, item: any) => acc + Number(item.cantidadAprobada ?? 0), 0);
+  }
+
+  private async findPendingReportForAssignment(asignacionEmpleadoId: number) {
+    const reviews = await this.repo.findAll({
+      where: { fecha_eliminacion: IsNull() } as any,
+      relations: { asignacionEmpleadoId: true } as any,
+      order: { id: "DESC" as any },
+    });
+
+    return (reviews as any[]).find((review) => {
+      const assignmentId = Number(review.asignacionEmpleadoId?.id ?? review.asignacionEmpleadoId);
+      return assignmentId === Number(asignacionEmpleadoId) && normalizeState(review.estadoRevision) === "PENDIENTE_REVISION";
+    }) ?? null;
   }
 
   private async validatePayload(
     payload: Pick<CreateProductionReviewDtoType, "cantidadRecibida" | "cantidadAprobada" | "observaciones" | "asignacionEmpleadoId">,
     excludingReviewId?: number,
   ) {
-    const { assignment, rawAssignment, aoc } = await this.getAssignmentContext(
-      payload.asignacionEmpleadoId,
-    );
-
-    const assignmentState = normalizeState((assignment as any).estado);
-    if (!["ACTIVA", "MOD_DEST", "DIA_VAL", "DIA_PEND"].includes(assignmentState)) {
-      throw new BadRequestError("Solo se pueden revisar asignaciones/modalidades activas.");
+    if (!payload.asignacionEmpleadoId) {
+      throw new BadRequestError("Debe indicar la asignación del reporte.");
     }
 
-    if ((assignment as any).modalidad === "PAGO_POR_DIAS") {
-      throw new BadRequestError("Las órdenes con modalidad PAGO_POR_DIAS no requieren revisión de producción por pieza.");
+    const { assignment, rawAssignment, aoc, orden } = await this.getAssignmentContext(payload.asignacionEmpleadoId);
+
+    const assignmentState = normalizeState(assignment.estado);
+    if (!assignmentState.startsWith("ACTIV")) {
+      throw new BadRequestError("Solo se pueden revisar asignaciones activas.");
     }
 
-    const reviews = await this.buildEnrichedReviews();
-    const existingForAssignment = reviews.find(
-      (item: any) => item.id !== excludingReviewId && item.assignment?.id === payload.asignacionEmpleadoId,
-    );
-    if (existingForAssignment) {
-      throw new BadRequestError("Esa asignación ya fue revisada anteriormente.");
+    if (!orden) {
+      throw new BadRequestError("No se encontró la orden asociada al reporte.");
+    }
+
+    if (!VALID_ORDER_STATES.has(normalizeState(orden.estado))) {
+      throw new BadRequestError("La orden no está en proceso o activa para revisión.");
+    }
+
+    if (normalizeState(orden.modalidad) !== "DESTAJO") {
+      throw new BadRequestError("Las órdenes con modalidad PAGO_POR_DIAS no pasan por revisión de producción por pieza.");
     }
 
     if (payload.cantidadRecibida <= 0) {
@@ -118,10 +138,7 @@ export class ProductionReviewService {
       throw new BadRequestError("La cantidad aprobada no puede ser mayor a la cantidad recibida.");
     }
 
-    const porcentajeRechazo = getRejectionPercentage(
-      payload.cantidadRecibida,
-      payload.cantidadAprobada,
-    );
+    const porcentajeRechazo = getRejectionPercentage(payload.cantidadRecibida, payload.cantidadAprobada);
     const estadoResultante = porcentajeRechazo <= 20 ? "APROBADA" : "OBSERVADA";
 
     if (estadoResultante === "OBSERVADA" && !payload.observaciones?.trim()) {
@@ -137,28 +154,29 @@ export class ProductionReviewService {
       }
     }
 
-    return { assignment, rawAssignment, porcentajeRechazo, estadoResultante };
+    return { assignment, rawAssignment, aoc, orden, porcentajeRechazo, estadoResultante };
   }
 
   async getPendingAssignments() {
-    const [assignments, reviews] = await Promise.all([
-      this.assignmentService.getAll() as Promise<any[]>,
-      this.buildEnrichedReviews(),
-    ]);
-
-    const reviewedAssignmentIds = new Set(
-      reviews.map((item: any) => Number(item.assignment?.id)).filter(Number.isFinite),
-    );
-
-    return assignments.filter((item: any) => {
-      const state = normalizeState(item.estado);
-      return ["ACTIVA", "MOD_DEST"].includes(state) && item.modalidad !== "PAGO_POR_DIAS" && !reviewedAssignmentIds.has(item.id);
-    });
+    const reviews = await this.buildEnrichedReviews();
+    return reviews
+      .filter((item: any) => normalizeState(item.estadoRevision) === "PENDIENTE_REVISION")
+      .filter((item: any) => normalizeState(item.assignment?.orden?.modalidad ?? item.assignment?.modalidad ?? "DESTAJO") === "DESTAJO")
+      .map((item: any) => ({
+        ...item.assignment,
+        reporteId: item.id,
+        cantidadReportada: Number(item.cantidadRecibida ?? 0),
+        cantidadRecibida: Number(item.cantidadRecibida ?? 0),
+        fechaReporte: item.fechaRevision,
+        estadoRevision: item.estadoRevision,
+        observacionesReporte: item.observaciones ?? null,
+        review: item,
+      }));
   }
 
   async getById(id: number) {
     const reviews = await this.buildEnrichedReviews();
-    const review = reviews.find((item: any) => item.id === id);
+    const review = reviews.find((item: any) => Number(item.id) === Number(id));
     if (!review) {
       throw new NotFoundError("Revisión de producción no encontrada");
     }
@@ -166,29 +184,50 @@ export class ProductionReviewService {
   }
 
   async create(dto: CreateProductionReviewDtoType) {
-    const validation = await this.validatePayload(dto);
+    const pendingReport = dto.reporteId
+      ? await this.getRawById(dto.reporteId)
+      : dto.asignacionEmpleadoId
+        ? await this.findPendingReportForAssignment(dto.asignacionEmpleadoId)
+        : null;
 
-    const saved = await this.repo.save(
-      this.repo.create({
-        cantidadRecibida: dto.cantidadRecibida,
-        cantidadAprobada: dto.cantidadAprobada,
-        estadoRevision: validation.estadoResultante,
-        observaciones: dto.observaciones?.trim() || undefined,
-        fechaRevision: dto.fechaRevision ?? new Date(),
-        asignacionEmpleadoId: { id: dto.asignacionEmpleadoId } as AsignacionEmpleado,
-      }),
-    );
+    if (!pendingReport) {
+      throw new BadRequestError("No se encontró un reporte pendiente para revisar.");
+    }
 
-    return this.getById(saved.id);
+    if (normalizeState((pendingReport as any).estadoRevision) !== "PENDIENTE_REVISION") {
+      throw new BadRequestError("Solo se pueden procesar reportes en estado PENDIENTE_REVISION.");
+    }
+
+    const assignmentId = Number((pendingReport as any).asignacionEmpleadoId?.id ?? (pendingReport as any).asignacionEmpleadoId);
+    const cantidadRecibida = Number(dto.cantidadRecibida ?? (pendingReport as any).cantidadRecibida);
+
+    const validation = await this.validatePayload({
+      ...dto,
+      asignacionEmpleadoId: assignmentId,
+      cantidadRecibida,
+    }, (pendingReport as any).id);
+
+    await this.repo.update((pendingReport as any).id, {
+      cantidadRecibida,
+      cantidadAprobada: dto.cantidadAprobada,
+      estadoRevision: validation.estadoResultante,
+      observaciones: dto.observaciones?.trim() || undefined,
+      fechaRevision: dto.fechaRevision ?? new Date(),
+      asignacionEmpleadoId: { id: assignmentId } as AsignacionEmpleado,
+      fecha_eliminacion: null,
+    } as any);
+
+    return this.getById((pendingReport as any).id);
   }
 
   async update(id: number, dto: UpdateProductionReviewDtoType) {
     const current = await this.getRawById(id);
+    const assignmentId = Number((current.asignacionEmpleadoId as any)?.id ?? current.asignacionEmpleadoId);
     const payload = {
       cantidadRecibida: dto.cantidadRecibida ?? current.cantidadRecibida,
       cantidadAprobada: dto.cantidadAprobada ?? current.cantidadAprobada,
       observaciones: dto.observaciones ?? current.observaciones,
-      asignacionEmpleadoId: Number((dto.asignacionEmpleadoId ?? (current.asignacionEmpleadoId as any)?.id ?? current.asignacionEmpleadoId)),
+      asignacionEmpleadoId: Number(dto.asignacionEmpleadoId ?? assignmentId),
     };
 
     const validation = await this.validatePayload(payload, id);
@@ -207,10 +246,7 @@ export class ProductionReviewService {
   }
 
   async remove(id: number) {
-    const current = await this.getRawById(id);
-    const assignmentId = Number((current.asignacionEmpleadoId as any)?.id ?? current.asignacionEmpleadoId);
-    await this.getAssignmentContext(assignmentId);
-
+    await this.getRawById(id);
     await this.repo.update(id, { fecha_eliminacion: new Date() } as any);
     return true;
   }
