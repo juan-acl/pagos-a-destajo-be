@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const CreateOrdenTrabajoDto = z.object({
-  numeroOrden: z.string().min(1).max(100),
+  numeroOrden: z.string().min(1).max(100).optional(),
   cantidadRequerida: z.number().int().positive(),
   medidaId: z.number().int().positive().nullable().optional(),
   pagoUnitario: z.number().positive(),
