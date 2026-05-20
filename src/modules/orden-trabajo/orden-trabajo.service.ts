@@ -15,11 +15,14 @@ export class OrdenTrabajoService {
   }
 
   async create(dto: CreateOrdenTrabajoDtoType) {
-    const existe = await this.repo.findByNumeroOrden(dto.numeroOrden);
-    if (existe) throw new Error("Ya existe una orden con ese número");
+    const fecha = new Date();
+    const fechaStr = fecha.toISOString().slice(0, 10).replace(/-/g, "");
+    const ordenes = await this.repo.findAll();
+    const correlativo = String(ordenes.length + 1).padStart(3, "0");
+    const numeroOrden = `ORD-${fechaStr}-${correlativo}`;
 
     const nueva = this.repo.create({
-      numeroOrden: dto.numeroOrden,
+      numeroOrden,
       cantidadRequerida: dto.cantidadRequerida,
       medidaId: dto.medidaId ?? null,
       pagoUnitario: dto.pagoUnitario,
