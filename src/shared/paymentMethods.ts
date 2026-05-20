@@ -48,6 +48,8 @@ interface EvidenciaTransferencia {
   numeroCuenta: string;
   numeroTransferencia: string;
   montoConfirmado: number;
+  usuarioPagoId?: number | null;
+  usuarioPagoNombre?: string;
 }
 
 interface EvidenciaCheque {
@@ -56,6 +58,8 @@ interface EvidenciaCheque {
   bancoEmisor: string;
   fechaCheque: Date;
   montoConfirmado: number;
+  usuarioPagoId?: number | null;
+  usuarioPagoNombre?: string;
 }
 
 interface EvidenciaEfectivo {
@@ -63,6 +67,8 @@ interface EvidenciaEfectivo {
   responsableEntrega: string;
   fechaEntrega: Date;
   montoConfirmado: number;
+  usuarioPagoId?: number | null;
+  usuarioPagoNombre?: string;
 }
 
 export type EvidenciaPagoType =

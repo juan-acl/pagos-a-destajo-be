@@ -15,10 +15,19 @@ export class RegistroDiarioService {
   private readonly asignacionEmpleadoRepo = new AsignacionEmpleadoRepository();
   private readonly miembroCuadrillaRepo = new MiembroCuadrillaRepository();
 
+  private isPagoPorDias(modalidad?: string | null): boolean {
+    const value = String(modalidad ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/Á/g, "A");
+
+    return ["PAGO_POR_DIA", "PAGO_POR_DIAS", "POR_DIA", "POR_DIAS"].includes(value);
+  }
+
   async registrarDias(dto: RegistrarDiasDtoType) {
     const orden = await this.ordenRepo.findOne({ where: { id: dto.ordenId } });
     if (!orden) throw new NotFoundError(`Orden ${dto.ordenId} no encontrada`);
-    if (orden.modalidad !== "PAGO_POR_DIAS") {
+    if (!this.isPagoPorDias(orden.modalidad)) {
       throw new BadRequestError("La orden no es de modalidad PAGO_POR_DIAS");
     }
 

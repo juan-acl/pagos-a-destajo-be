@@ -1,9 +1,9 @@
 import { NotFoundError } from "../../error/customErrors";
 import { EmpleadoRepository } from "../../repository/empleado.repository";
-import { CreateEmpleadoDtoType, UpdateEmpleadoDtoType, LoginDtoType } from "./empleado.dto";
+import { CreateEmpleadoDtoType, LoginEmpleadoDtoType, UpdateEmpleadoDtoType } from "./empleado.dto";
 
 export class EmpleadoService {
-  private readonly repo = new EmpleadoRepository();
+    private readonly repo = new EmpleadoRepository();
 
   async getAll() {
     return this.repo.findAll();
@@ -15,7 +15,7 @@ export class EmpleadoService {
     return empleado;
   }
 
-  async login(dto: LoginDtoType) {
+  async login(dto: LoginEmpleadoDtoType) {
     const empleado = await this.repo.findByEmail(dto.email);
     if (!empleado) throw new NotFoundError("Credenciales incorrectas");
     if (empleado.password !== dto.password) throw new Error("Credenciales incorrectas");
@@ -76,7 +76,10 @@ export class EmpleadoService {
 
     const ordenTrabajo = await this.repo.findOrdenTrabajo(asignacionOrden.ordenTrabajoId);
 
-    if (!ordenTrabajo || ordenTrabajo.estado !== "EN_PROCESO" || ordenTrabajo.modalidad !== "DESTAJO") {
+    const estadoOrden = String(ordenTrabajo?.estado ?? "").toUpperCase();
+    const modalidadOrden = String(ordenTrabajo?.modalidad ?? "").toUpperCase();
+
+    if (!ordenTrabajo || !["EN_PROCESO", "ACTIVO"].includes(estadoOrden) || modalidadOrden !== "DESTAJO") {
       return {
         miembro, asignacionOrden, ordenTrabajo,
         ultimoReporte: null, historial: [], pagos: [], yaReporto: false,
@@ -85,8 +88,8 @@ export class EmpleadoService {
     }
 
     const [ultimoReporte, historial, pagos] = await Promise.all([
-      this.repo.findUltimoReporte(asignacionOrden.id),
-      this.repo.findHistorialReportes(asignacionOrden.id),
+      this.repo.findUltimoReporte(asignacionOrden.id, empleadoId, miembro.cuadrillaId),
+      this.repo.findHistorialReportes(asignacionOrden.id, empleadoId, miembro.cuadrillaId),
       this.repo.findPagosEmpleado(empleadoId),
     ]);
 
@@ -113,19 +116,24 @@ export class EmpleadoService {
     const ordenTrabajo = await this.repo.findOrdenTrabajo(asignacionOrden.ordenTrabajoId);
     if (!ordenTrabajo) throw new Error("Orden de trabajo no encontrada.");
 
-    if (ordenTrabajo.estado !== "EN_PROCESO") {
+    const estadoOrden = String(ordenTrabajo.estado ?? "").toUpperCase();
+    const modalidadOrden = String(ordenTrabajo.modalidad ?? "").toUpperCase();
+
+    if (!["EN_PROCESO", "ACTIVO"].includes(estadoOrden)) {
       throw new Error("La orden no está en proceso. No puedes reportar en este momento.");
     }
 
-    if (ordenTrabajo.modalidad !== "DESTAJO") {
+    if (modalidadOrden !== "DESTAJO") {
       throw new Error("Esta orden no es de modalidad DESTAJO.");
     }
-return this.repo.createReporteOperario({
-  cantidadRecibida,
-  cantidadAprobada: 0,
-  estadoRevision: "PENDIENTE_REVISION",
-  fechaRevision: new Date(),
-  cuadrillaId: miembro.cuadrillaId,
-});
+    return this.repo.createReporteOperario({
+      cantidadRecibida,
+      cantidadAprobada: 0,
+      estadoRevision: "PENDIENTE_REVISION",
+      fechaRevision: new Date(),
+      cuadrillaId: miembro.cuadrillaId,
+      empleadoId,
+      asignacionOrdenId: asignacionOrden.id,
+    });
   }
 }
