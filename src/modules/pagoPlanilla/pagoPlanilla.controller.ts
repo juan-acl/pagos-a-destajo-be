@@ -8,7 +8,8 @@ export class PaymentController {
 
   getAll = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = await this.service.getAll();
+      const limit = req.query.limit !== undefined ? Number(req.query.limit) : undefined;
+      const data = await this.service.getAll(limit);
       HttpResponse.ok(res, data);
     } catch (e) {
       next(e);

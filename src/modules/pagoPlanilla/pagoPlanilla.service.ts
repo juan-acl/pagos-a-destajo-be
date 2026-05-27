@@ -124,12 +124,11 @@ export class PaymentService {
     return planilla;
   }
 
-  getAll() {
+  getAll(limit?: number) {
     return this.planillaRepo.findAll({
       relations: { loteProduccion: true },
       order: { fechaCreacion: "DESC" },
-      take: 10,
-      skip: 0,
+      ...(limit !== undefined ? { take: limit } : {}),
     });
   }
 

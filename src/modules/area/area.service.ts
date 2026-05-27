@@ -46,8 +46,6 @@ export class AreaService {
       order: {
         fechaCreacion: "DESC",
       },
-      take: 10,
-      skip: 0,
     });
   }
 }
