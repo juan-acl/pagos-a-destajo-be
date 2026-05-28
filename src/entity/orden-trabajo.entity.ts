@@ -23,6 +23,9 @@ export class OrdenTrabajoEntity {
   @Column({ type: "varchar", length: 50, nullable: false, name: "ODT_ESTADO", default: "activo" })
   estado: string;
 
+  @Column({ type: "varchar", length: 50, nullable: false, name: "ODT_MODALIDAD", default: "DESTAJO" })
+  modalidad: string | null;
+
   @CreateDateColumn({ name: "ODT_FECHA_CREACION" })
   fechaCreacion: Date;
 

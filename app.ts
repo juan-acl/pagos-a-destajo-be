@@ -14,6 +14,7 @@ import productionReviewRoutes from "./src/modules/productionReview/productionRev
 import empleadoRoutes from "./src/modules/Empleado/empleado.routes";
 import cuadrillaRoutes from "./src/modules/cuadrilla/cuadrilla.routes";
 import miembroCuadrillaRoutes from "./src/modules/miembro-cuadrilla/miembro-cuadrilla.routes";
+import registroDiarioRoutes from "./src/modules/registroDiario/registroDiario.routes";
 
 const app: Application = express();
 const API_PREFIX = "/api";
@@ -25,7 +26,7 @@ app.use(
   cors({
     origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-user-role", "x-user-id", "x-employee-id"],
   }),
 );
 
@@ -44,6 +45,7 @@ app.use(`${API_PREFIX}/production-review`, productionReviewRoutes);
 app.use(`${API_PREFIX}/position-workers`, positionWorkerRoutes);
 app.use(`${API_PREFIX}/area`, areaRoutes);
 app.use(`${API_PREFIX}/planilla`, paymentRoutes);
+app.use(`${API_PREFIX}/registros-diarios`, registroDiarioRoutes);
 
 app.use(errorMiddleware);
 

@@ -9,11 +9,12 @@ import { CuadrillaEntity } from "../entity/cuadrilla.entity";
 import { Empleado } from "../entity/empleado.entity";
 import { MiembroCuadrilla } from "../entity/miembro.entity";
 import { MedidaEntity } from "../entity/medidas.entity";
-import { AsignacionOrdenCuadrilla } from "../entity/asignacionCuadrilla.entity"; 
+import { AsignacionOrdenCuadrilla } from "../entity/asignacionCuadrilla.entity";
 import { AsignacionEmpleado } from "../entity/asignacionEmpleado.entity";
 import { LoteProduccion } from "../entity/productionLot.entity";
 import { OrdenTrabajoEntity } from "../entity/orden-trabajo.entity";
 import { RevisionProduccion } from "../entity/revisionProduccion.entity";
+import { RegistroDiario } from "../entity/registroDiario.entity";
 
 export const AppDataSource = new DataSource({
   type: "oracle",
@@ -36,6 +37,7 @@ export const AppDataSource = new DataSource({
     OrdenTrabajoEntity,
     Planilla,
     Puesto,
+    RegistroDiario,
     RevisionProduccion,
   ],
   migrations: ["src/migrations/*.ts"],

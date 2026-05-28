@@ -1,11 +1,11 @@
 import { IsNull } from "typeorm";
 import { BadRequestError, NotFoundError } from "../../error/customErrors";
 import { LoteProduccionRepository } from "../../repository/productionLot.repository";
-import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
 import {
   CreateProductionLotDtoType,
   UpdateProductionLotDtoType,
 } from "./productionLot.dto";
+import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
 import { EmployeeAssignmentService } from "../employeeAssignment/employeeAssignment.service";
 import { ProductionReviewService } from "../productionReview/productionReview.service";
 import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
@@ -31,55 +31,56 @@ export class ProductionLotService {
       this.reviewService.getAll() as Promise<any[]>,
       this.repo.findAll({
         where: { fechaEliminacion: IsNull() } as any,
-        relations: { revisionProduccionId: { asignacion: true } } as any,
+        relations: { revisionProduccionId: { asignacionEmpleadoId: true } } as any,
       }),
     ]);
 
-    const orderMap = new Map(orders.map((item) => [item.id, item]));
-    const cuadrillaMap = new Map(cuadrillas.map((item) => [item.id, item]));
+    const orderMap = new Map(orders.map((item: any) => [Number(item.id), item]));
+    const cuadrillaMap = new Map(cuadrillas.map((item: any) => [Number(item.id), item]));
 
-    return aocs.map((aoc) => {
-      const orden = orderMap.get(aoc.ordenTrabajoId) ?? null;
-      const cuadrilla = cuadrillaMap.get(aoc.cuadrillaId) ?? null;
+    return aocs.map((aoc: any) => {
+      const orden = orderMap.get(Number(aoc.ordenTrabajoId)) ?? null;
+      const cuadrilla = cuadrillaMap.get(Number(aoc.cuadrillaId)) ?? null;
+      const modalidad = normalizeState(orden?.modalidad ?? "DESTAJO");
       const currentAssignments = assignments.filter(
-        (item) => item.asignacionOrdenCuadrillaId === aoc.id,
+        (item: any) => Number(item.asignacionOrdenCuadrillaId) === Number(aoc.id),
       );
       const currentReviews = reviews.filter(
-        (item) => item.assignment?.asignacionOrdenCuadrillaId === aoc.id,
+        (item: any) => Number(item.assignment?.asignacionOrdenCuadrillaId) === Number(aoc.id),
       );
-      const pendingAssignments = currentAssignments.filter(
-        (item) => !currentReviews.some((review) => review.assignment?.id === item.id),
+      const pendingReports = currentReviews.filter(
+        (item: any) => normalizeState(item.estadoRevision) === "PENDIENTE_REVISION",
       );
       const observedReviews = currentReviews.filter(
-        (item) => normalizeState(item.estadoRevision) === "OBSERVADA",
+        (item: any) => normalizeState(item.estadoRevision) === "OBSERVADA",
       );
       const approvedReviews = currentReviews.filter(
-        (item) => normalizeState(item.estadoRevision) === "APROBADA",
+        (item: any) => normalizeState(item.estadoRevision) === "APROBADA",
       );
       const totalAprobado = approvedReviews.reduce(
-        (acc, item) => acc + Number(item.cantidadAprobada ?? 0),
+        (acc: number, item: any) => acc + Number(item.cantidadAprobada ?? 0),
         0,
       );
-      const openLot = lots.find((lot) => {
+
+      const openLot = lots.find((lot: any) => {
         const relatedReview: any = lot.revisionProduccionId;
-        const relatedAssignmentId = Number(relatedReview?.asignacion?.id ?? relatedReview?.asignacionEmpleadoId);
-        const relatedAssignment = assignments.find((item) => item.id === relatedAssignmentId);
+        const relatedAssignmentId = Number(relatedReview?.asignacionEmpleadoId?.id ?? relatedReview?.asignacionEmpleadoId);
+        const relatedAssignment = assignments.find((item: any) => Number(item.id) === relatedAssignmentId);
         return (
-          relatedAssignment?.asignacionOrdenCuadrillaId === aoc.id &&
-          normalizeState(lot.estado) === "EN_PROCESO"
+          Number(relatedAssignment?.asignacionOrdenCuadrillaId) === Number(aoc.id) &&
+          ["ACTIVA", "ACTIVO", "APROBADO", "APROBADA"].includes(normalizeState(lot.estado))
         );
       });
 
       const blockers: string[] = [];
-      if (pendingAssignments.length > 0) {
-        blockers.push("Todos los empleados deben ser revisados antes de generar el lote.");
+      if (modalidad !== "DESTAJO") {
+        blockers.push("Los lotes solo aplican para órdenes con modalidad DESTAJO. Las órdenes por día se liquidan desde Gestión de Días/Planilla.");
       }
-      if (observedReviews.length > 0) {
-        blockers.push(
-          `Hay revisiones observadas: ${observedReviews
-            .map((item) => item.assignment?.empleadoNombre ?? `Asignación #${item.assignment?.id}`)
-            .join(", ")}.`,
-        );
+      if (currentAssignments.length === 0) {
+        blockers.push("Primero debes sincronizar los empleados de la cuadrilla en Asignaciones.");
+      }
+      if (pendingReports.length > 0) {
+        blockers.push("Hay reportes pendientes de revisión para esta orden y cuadrilla.");
       }
       if (totalAprobado <= 0) {
         blockers.push("No hay producción aprobada para generar el lote.");
@@ -88,17 +89,19 @@ export class ProductionLotService {
         blockers.push("La orden está vencida.");
       }
       if (openLot) {
-        blockers.push("Ya existe un lote abierto EN_PROCESO para esta orden y cuadrilla.");
+        blockers.push("Ya existe un lote abierto para esta orden y cuadrilla.");
       }
 
       return {
-        id: aoc.id,
-        cantidadAsignada: aoc.cantidadAsignada,
+        id: Number(aoc.id),
+        cantidadAsignada: Number(aoc.cantidadAsignada ?? 0),
+        modalidad,
         orden,
         cuadrilla,
         assignments: currentAssignments,
         reviews: currentReviews,
-        pendingAssignments,
+        pendingAssignments: pendingReports.map((item: any) => item.assignment).filter(Boolean),
+        pendingReports,
         observedReviews,
         approvedReviews,
         totalAprobado,
@@ -115,18 +118,20 @@ export class ProductionLotService {
         where: { fechaEliminacion: IsNull() } as any,
         relations: { revisionProduccionId: true } as any,
         order: { id: "DESC" as any },
+        take: 10,
+        skip: 0,
       }),
       this.reviewService.getAll() as Promise<any[]>,
       this.buildCandidates(),
     ]);
 
-    const reviewMap = new Map(reviews.map((item) => [item.id, item]));
+    const reviewMap = new Map(reviews.map((item: any) => [Number(item.id), item]));
 
-    return lots.map((lot) => {
-      const reviewId = Number((lot.revisionProduccionId as any)?.id ?? lot.revisionProduccionId);
+    return lots.map((lot: any) => {
+      const reviewId = Number(lot.revisionProduccionId?.id ?? lot.revisionProduccionId);
       const review = reviewMap.get(reviewId) ?? null;
       const candidate = candidates.find(
-        (item) => item.id === review?.assignment?.asignacionOrdenCuadrillaId,
+        (item: any) => Number(item.id) === Number(review?.assignment?.asignacionOrdenCuadrillaId),
       );
 
       return {
@@ -136,6 +141,7 @@ export class ProductionLotService {
         asignacionOrdenCuadrillaId: candidate?.id ?? null,
         orden: candidate?.orden ?? null,
         cuadrilla: candidate?.cuadrilla ?? null,
+        modalidad: candidate?.modalidad ?? null,
         montoTotal: candidate?.montoTotal ?? 0,
         blockers: candidate?.blockers ?? [],
       };
@@ -144,7 +150,7 @@ export class ProductionLotService {
 
   private async getRawById(id: number) {
     const lot = await this.repo.findOne({
-      where: { id, fechaEliminacion: IsNull() },
+      where: { id, fechaEliminacion: IsNull() } as any,
       relations: { revisionProduccionId: true } as any,
     });
 
@@ -157,7 +163,7 @@ export class ProductionLotService {
 
   private async getCandidateOrFail(aocId: number) {
     const candidates = await this.buildCandidates();
-    const candidate = candidates.find((item) => item.id === aocId);
+    const candidate = candidates.find((item: any) => Number(item.id) === Number(aocId));
     if (!candidate) {
       throw new NotFoundError("La asignación de orden a cuadrilla no existe.");
     }
@@ -171,8 +177,7 @@ export class ProductionLotService {
     const m = String(today.getMonth() + 1).padStart(2, "0");
     const d = String(today.getDate()).padStart(2, "0");
     const prefix = `LOTE-${y}${m}${d}-C${cuadrillaId}-`;
-    const consecutive =
-      lots.filter((item) => String(item.numeroLote).startsWith(prefix)).length + 1;
+    const consecutive = lots.filter((item: any) => String(item.numeroLote).startsWith(prefix)).length + 1;
     return `${prefix}${String(consecutive).padStart(2, "0")}`;
   }
 
@@ -186,6 +191,9 @@ export class ProductionLotService {
     }
 
     const candidate = await this.getCandidateOrFail(dto.asignacionOrdenCuadrillaId);
+    if (candidate.modalidad !== "DESTAJO") {
+      throw new BadRequestError("No se puede generar lote para órdenes PAGO_POR_DIAS.");
+    }
     if (!candidate.canGenerate) {
       throw new BadRequestError(candidate.blockers.join(" "));
     }
@@ -202,7 +210,7 @@ export class ProductionLotService {
         numeroLote,
         totalPiezasAprobadas: candidate.totalAprobado,
         fechaEnvio: dto.fechaEnvio ?? new Date(),
-        estado: normalizeState(dto.estado ?? "EN_PROCESO"),
+        estado: normalizeState(dto.estado ?? "ACTIVO"),
         revisionProduccionId: { id: representativeReview.id } as any,
       }),
     );
@@ -210,7 +218,7 @@ export class ProductionLotService {
     if (candidate.orden) {
       const enrichedLots = await this.enrichLots();
       const totalLoteOrden = enrichedLots
-        .filter((item: any) => item.orden?.id === candidate.orden?.id)
+        .filter((item: any) => Number(item.orden?.id) === Number(candidate.orden?.id))
         .reduce((acc: number, item: any) => acc + Number(item.totalPiezasAprobadas ?? 0), 0);
 
       if (totalLoteOrden >= Number(candidate.orden.cantidadRequerida)) {
@@ -223,7 +231,7 @@ export class ProductionLotService {
 
   async getById(id: number) {
     const lots = await this.enrichLots();
-    const lot = lots.find((item: any) => item.id === id);
+    const lot = lots.find((item: any) => Number(item.id) === Number(id));
     if (!lot) {
       throw new NotFoundError("Lote de producción no encontrado");
     }
@@ -239,26 +247,27 @@ export class ProductionLotService {
       throw new BadRequestError("Faltan datos para crear el lote manualmente.");
     }
 
+    const review = await this.reviewService.getById(dto.revisionProduccionId);
+    if (normalizeState((review as any).assignment?.orden?.modalidad ?? (review as any).assignment?.modalidad) !== "DESTAJO") {
+      throw new BadRequestError("No se puede crear lote manual para una orden PAGO_POR_DIAS.");
+    }
+
     const newLot = this.repo.create({
       numeroLote: dto.numeroLote,
       totalPiezasAprobadas: dto.totalPiezasAprobadas,
       fechaEnvio: dto.fechaEnvio ?? new Date(),
-      estado: normalizeState(dto.estado ?? "EN_PROCESO"),
+      estado: normalizeState(dto.estado ?? "ACTIVO"),
       revisionProduccionId: { id: dto.revisionProduccionId } as any,
     });
 
     const saved = await this.repo.save(newLot);
     return this.getById(saved.id);
-  
   }
 
   async update(id: number, dto: UpdateProductionLotDtoType) {
-    const current = await this.getRawById(id);
+    await this.getRawById(id);
 
-    if (
-      dto.totalPiezasAprobadas != null &&
-      dto.revisionProduccionId != null
-    ) {
+    if (dto.totalPiezasAprobadas != null && dto.revisionProduccionId != null) {
       const review = await this.reviewService.getById(dto.revisionProduccionId);
       if (dto.totalPiezasAprobadas > Number(review.cantidadAprobada ?? 0)) {
         throw new BadRequestError("La cantidad del lote no puede superar lo aprobado en la revisión vinculada.");
@@ -267,14 +276,10 @@ export class ProductionLotService {
 
     await this.repo.update(id, {
       ...(dto.numeroLote !== undefined && { numeroLote: dto.numeroLote }),
-      ...(dto.totalPiezasAprobadas !== undefined && {
-        totalPiezasAprobadas: dto.totalPiezasAprobadas,
-      }),
+      ...(dto.totalPiezasAprobadas !== undefined && { totalPiezasAprobadas: dto.totalPiezasAprobadas }),
       ...(dto.fechaEnvio !== undefined && { fechaEnvio: dto.fechaEnvio }),
       ...(dto.estado !== undefined && { estado: normalizeState(dto.estado) }),
-      ...(dto.revisionProduccionId !== undefined && {
-        revisionProduccionId: { id: dto.revisionProduccionId } as any
-      }),
+      ...(dto.revisionProduccionId !== undefined && { revisionProduccionId: { id: dto.revisionProduccionId } as any }),
     } as any);
 
     return this.getById(id);
@@ -289,4 +294,3 @@ export class ProductionLotService {
     return this.enrichLots();
   }
 }
-

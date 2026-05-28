@@ -1,153 +1,47 @@
 import { IsNull } from "typeorm";
 import { BadRequestError, NotFoundError } from "../../error/customErrors";
-import { AsignacionEmpleadoRepository } from "../../repository/employeeAssignment.repository";
+import { EmployeeAssignmentRepository } from "../../repository/employeeAssignment.repository";
 import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
 import { CuadrillaRepository } from "../../repository/cuadrilla.repository";
-import { EmpleadoRepository } from "../../repository/empleado.repository";
-import { MiembroCuadrillaRepository } from "../../repository/miembro-cuadrilla.repository";
 import { OrdenTrabajoRepository } from "../../repository/orden-trabajo.repository";
-import { PositionWorkerRepository } from "../../repository/positionWorker.repository";
+import { MiembroCuadrillaRepository } from "../../repository/miembro-cuadrilla.repository";
 import { RevisionProduccionRepository } from "../../repository/productionReview.repository";
-import {
-  encodeAssignmentState,
-  enrichAssignment,
-  getEmployeeFullName,
-  getMiembroSortDate,
-  normalizeState,
-  parseAssignmentState,
-} from "../../shared/temporal-flow";
 import {
   CreateEmployeeAssignmentDtoType,
   DistributeEmployeeAssignmentsDtoType,
+  SetPaymentModalityDtoType,
   UpdateEmployeeAssignmentDtoType,
 } from "./employeeAssignment.dto";
+import {
+  encodeAssignmentState,
+  getEmployeeFullName,
+  normalizeState,
+  parseAssignmentState,
+} from "../../shared/temporal-flow";
+
+const VALID_ASSIGNMENT_STATES = new Set(["ACTIVA", "ACTIVO"]);
+const VALID_ORDER_STATES = new Set(["EN_PROCESO", "ACTIVA", "ACTIVO"]);
+
+type MemberInfo = {
+  empleadoId: number;
+  empleadoNombre: string;
+  puestoNombre?: string | null;
+};
 
 export class EmployeeAssignmentService {
-  private readonly repo = new AsignacionEmpleadoRepository();
+  private readonly repo = new EmployeeAssignmentRepository();
   private readonly orderAssignmentRepo = new AsignacionOrdenCuadrillaRepository();
   private readonly cuadrillaRepo = new CuadrillaRepository();
-  private readonly empleadoRepo = new EmpleadoRepository();
-  private readonly miembroRepo = new MiembroCuadrillaRepository();
   private readonly ordenRepo = new OrdenTrabajoRepository();
-  private readonly puestoRepo = new PositionWorkerRepository();
+  private readonly miembroRepo = new MiembroCuadrillaRepository();
   private readonly reviewRepo = new RevisionProduccionRepository();
 
-  private async getActiveAssignmentsRaw() {
+  private async getActiveRawRows() {
     return this.repo.findAll({
       where: { fecha_eliminacion: IsNull() } as any,
-      relations: { cuadrillaId: true },
+      relations: { cuadrillaId: true } as any,
       order: { id: "DESC" as any },
     });
-  }
-
-  private async getRawById(id: number) {
-    const assignment = await this.repo.findOne({
-      where: { id, fecha_eliminacion: IsNull() } as any,
-      relations: { cuadrillaId: true },
-    });
-
-    if (!assignment) {
-      throw new NotFoundError("Asignación de empleado no encontrada");
-    }
-
-    return assignment;
-  }
-
-  private async getReviewData() {
-    const reviews = await this.reviewRepo.findAll({
-      where: { fecha_eliminacion: IsNull() } as any,
-    });
-
-    const approvedTotals = new Map<number, number>();
-    const hasAnyReview = new Set<number>();
-
-    for (const review of reviews) {
-      const assignmentId = Number((review.asignacionEmpleadoId as any)?.id ?? review.asignacionEmpleadoId);
-      if (!Number.isFinite(assignmentId)) continue;
-      hasAnyReview.add(assignmentId);
-      if (normalizeState(review.estadoRevision) === "APROBADA") {
-        approvedTotals.set(
-          assignmentId,
-          (approvedTotals.get(assignmentId) ?? 0) + Number(review.cantidadAprobada ?? 0),
-        );
-      }
-    }
-
-    return { reviews, approvedTotals, hasAnyReview };
-  }
-
-  private async buildEnrichedAssignments() {
-    const assignments = await this.getActiveAssignmentsRaw();
-    const metas = assignments.map((item) => parseAssignmentState(item.estado));
-
-    const empleadoIds = [...new Set(metas.map((item) => item.empleadoId).filter((item): item is number => item != null))];
-    const aocIds = [...new Set(metas.map((item) => item.asignacionOrdenCuadrillaId).filter((item): item is number => item != null))];
-
-    const [empleados, aocs, { approvedTotals, hasAnyReview }] = await Promise.all([
-      empleadoIds.length
-        ? this.empleadoRepo.findAll({ where: empleadoIds.map((id) => ({ id })) as any })
-        : Promise.resolve([]),
-      aocIds.length
-        ? this.orderAssignmentRepo.findAll({ where: aocIds.map((id) => ({ id })) as any })
-        : Promise.resolve([]),
-      this.getReviewData(),
-    ]);
-
-    const employeeMap = new Map(empleados.map((item) => [item.id, item]));
-    const aocMap = new Map(aocs.map((item) => [item.id, item]));
-
-    return assignments.map((assignment) => {
-      const meta = parseAssignmentState(assignment.estado);
-      return enrichAssignment(assignment, {
-        empleado: meta.empleadoId != null ? employeeMap.get(meta.empleadoId) ?? null : null,
-        cuadrilla: (assignment.cuadrillaId as any) ?? null,
-        asignacionOrdenCuadrilla:
-          meta.asignacionOrdenCuadrillaId != null
-            ? aocMap.get(meta.asignacionOrdenCuadrillaId) ?? null
-            : null,
-        approvedTotal: approvedTotals.get(assignment.id) ?? 0,
-        hasAnyReview: hasAnyReview.has(assignment.id),
-      });
-    });
-  }
-
-  private async getMiembrosActivos(cuadrillaId: number) {
-    const miembros = await this.miembroRepo.findByCuadrilla(cuadrillaId);
-    const activos = miembros.filter(
-      (item) => normalizeState(item.estado) === "ACTIVO" && normalizeState(item.empleado?.estado) === "ACTIVO",
-    );
-
-    const puestoIds = [...new Set(activos.map((item) => item.empleado?.pstPuesto).filter((value): value is number => value != null))];
-    const puestos = await Promise.all(puestoIds.map((id) => this.puestoRepo.findById(id)));
-    const puestoMap = new Map(puestos.filter(Boolean).map((puesto) => [puesto!.id, puesto!]));
-
-    return activos
-      .map((miembro) => ({
-        ...miembro,
-        puestoNombre: miembro.empleado?.pstPuesto != null ? puestoMap.get(miembro.empleado.pstPuesto)?.nombre ?? null : null,
-        empleadoNombre: getEmployeeFullName(miembro.empleado),
-      }))
-      .sort((a, b) => a.empleadoNombre.localeCompare(b.empleadoNombre, "es", { sensitivity: "base" }));
-  }
-
-  private calculateAutoDistribution(total: number, miembros: Awaited<ReturnType<EmployeeAssignmentService["getMiembrosActivos"]>>) {
-    if (miembros.length === 0) {
-      throw new BadRequestError("La cuadrilla no tiene miembros activos para distribuir la meta.");
-    }
-
-    const base = Math.floor(total / miembros.length);
-    const sobrante = total - base * miembros.length;
-
-    const jefe = miembros.find((item) => normalizeState(item.puestoNombre).includes("JEFE"));
-    const fallback = [...miembros].sort((a, b) => getMiembroSortDate(a) - getMiembroSortDate(b))[0];
-    const receiverId = (jefe ?? fallback).empleadoId;
-
-    return miembros.map((miembro) => ({
-      empleadoId: miembro.empleadoId,
-      empleadoNombre: miembro.empleadoNombre,
-      puestoNombre: miembro.puestoNombre,
-      metaIndividual: base + (miembro.empleadoId === receiverId ? sobrante : 0),
-    }));
   }
 
   private async getOrderAssignmentOrFail(id: number) {
@@ -172,191 +66,286 @@ export class EmployeeAssignmentService {
     return { aoc, orden, cuadrilla };
   }
 
-  private async getAssignmentsByAoc(aocId: number) {
-    const assignments = await this.getActiveAssignmentsRaw();
-    return assignments.filter((item) => parseAssignmentState(item.estado).asignacionOrdenCuadrillaId === aocId);
+  private async getMiembrosActivos(cuadrillaId: number) {
+    const miembros = await this.miembroRepo.findByCuadrilla(cuadrillaId);
+    return miembros
+      .map<MemberInfo>((miembro: any) => ({
+        empleadoId: Number(miembro.empleadoId),
+        empleadoNombre: getEmployeeFullName(miembro.empleado),
+        puestoNombre: miembro.empleado?.puesto?.nombre ?? miembro.empleado?.pstPuesto?.nombre ?? null,
+      }))
+      .filter((miembro) => Number.isFinite(miembro.empleadoId));
   }
 
-  private async validateDistribution(
-    aocId: number,
-    metas: { empleadoId: number; metaIndividual: number }[],
-    opts?: { allowReplace?: boolean },
-  ) {
-    const { aoc, orden, cuadrilla } = await this.getOrderAssignmentOrFail(aocId);
-    const orderState = normalizeState(orden.estado);
-
-    if (orderState !== "ACTIVO") {
-      throw new BadRequestError("Solo se pueden distribuir metas sobre órdenes ACTIVAS.");
-    }
-
-    const miembros = await this.getMiembrosActivos(aoc.cuadrillaId);
-    if (!miembros.length) {
-      throw new BadRequestError("La cuadrilla no tiene miembros activos.");
-    }
-
-    const miembroIds = new Set(miembros.map((item) => item.empleadoId));
-    const requestedIds = metas.map((item) => item.empleadoId);
-    const uniqueRequested = new Set(requestedIds);
-
-    if (requestedIds.length !== uniqueRequested.size) {
-      throw new BadRequestError("No se puede repetir un empleado en la misma distribución.");
-    }
-
-    if (requestedIds.length !== miembros.length) {
-      throw new BadRequestError("Debes asignar meta a todos los miembros activos de la cuadrilla.");
-    }
-
-    const invalidEmployee = requestedIds.find((id) => !miembroIds.has(id));
-    if (invalidEmployee != null) {
-      throw new BadRequestError(`El empleado ${invalidEmployee} no pertenece a la cuadrilla activa.`);
-    }
-
-    const total = metas.reduce((acc, item) => acc + Number(item.metaIndividual || 0), 0);
-    if (total > aoc.cantidadAsignada) {
-      throw new BadRequestError(
-        `La suma de metas (${total}) supera la cantidad asignada a la cuadrilla (${aoc.cantidadAsignada}).`,
-      );
-    }
-
-    const existing = await this.getAssignmentsByAoc(aocId);
-    if (existing.length > 0) {
-      const { hasAnyReview } = await this.getReviewData();
-      const locked = existing.some((item) => hasAnyReview.has(item.id));
-      if (locked) {
-        throw new BadRequestError(
-          "Ya existen metas con producción/revisión registrada. No se pueden redistribuir.",
-        );
-      }
-
-      if (!opts?.allowReplace) {
-        throw new BadRequestError("Ya existen metas para esa orden y cuadrilla.");
-      }
-    }
-
-    return { aoc, orden, cuadrilla, miembros, existing, total };
-  }
-
-  async getPanels() {
-    const [aocs, orders, cuadrillas, assignments] = await Promise.all([
-      this.orderAssignmentRepo.findAll({
-        where: { fechaEliminacion: IsNull() } as any,
-        order: { id: "DESC" as any },
-      }),
-      this.ordenRepo.findAll({ where: { fechaEliminacion: IsNull() } as any }),
-      this.cuadrillaRepo.findAll({ where: { deletedAt: IsNull() } as any }),
-      this.buildEnrichedAssignments(),
-    ]);
-
-    const orderMap = new Map(orders.map((item) => [item.id, item]));
-    const cuadrillaMap = new Map(cuadrillas.map((item) => [item.id, item]));
-    const eligibleAocs = aocs.filter((aoc) => {
-      const orden = orderMap.get(aoc.ordenTrabajoId);
-      return normalizeState(orden?.estado) === "ACTIVO";
+  private async getReviewStats() {
+    const reviews = await this.reviewRepo.findAll({
+      where: { fecha_eliminacion: IsNull() } as any,
+      relations: { asignacionEmpleadoId: true } as any,
     });
 
-    const panels = await Promise.all(
-      eligibleAocs.map(async (aoc) => {
-        const orden = orderMap.get(aoc.ordenTrabajoId) ?? null;
-        const cuadrilla = cuadrillaMap.get(aoc.cuadrillaId) ?? null;
-        const miembros = await this.getMiembrosActivos(aoc.cuadrillaId);
+    const stats = new Map<number, { approved: number; hasReview: boolean; pending: number }>();
+    for (const review of reviews as any[]) {
+      const assignmentId = Number(review.asignacionEmpleadoId?.id ?? review.asignacionEmpleadoId);
+      if (!Number.isFinite(assignmentId)) continue;
 
-        const existingAssignments = assignments.filter(
-          (item) => item.asignacionOrdenCuadrillaId === aoc.id,
-        );
+      const current = stats.get(assignmentId) ?? { approved: 0, hasReview: false, pending: 0 };
+      current.hasReview = true;
+      const state = normalizeState(review.estadoRevision);
+      if (state === "APROBADA" || state === "APROBADO") {
+        current.approved += Number(review.cantidadAprobada ?? 0);
+      }
+      if (state === "PENDIENTE_REVISION") {
+        current.pending += 1;
+      }
+      stats.set(assignmentId, current);
+    }
 
-        const assignedTotal = existingAssignments.reduce(
-          (acc, item) => acc + Number(item.metaIndividual ?? 0),
-          0,
-        );
-
-        const allowEdit = existingAssignments.every((item) => item.puedeEditar);
-
-        const autoDistribution =
-          miembros.length > 0
-            ? this.calculateAutoDistribution(aoc.cantidadAsignada, miembros)
-            : [];
-
-        const blockedReason =
-          miembros.length === 0
-            ? "La cuadrilla no tiene miembros activos."
-            : null;
-
-        return {
-          id: aoc.id,
-          estado: normalizeState(aoc.estado),
-          cantidadAsignada: aoc.cantidadAsignada,
-          orden,
-          cuadrilla,
-          miembros,
-          assignedTotal,
-          remaining: aoc.cantidadAsignada - assignedTotal,
-          existingAssignments,
-          allowEdit,
-          autoDistribution,
-          canDistribute: miembros.length > 0,
-          blockedReason,
-        };
-      }),
-    );
-
-    return panels;
+    return stats;
   }
 
-  async getById(id: number) {
-    const assignments = await this.buildEnrichedAssignments();
-    const match = assignments.find((item) => item.id === id);
-    if (!match) {
-      throw new NotFoundError("Asignación de empleado no encontrada");
+  private buildAssignmentMap(rows: any[]) {
+    const map = new Map<string, any>();
+    for (const row of rows) {
+      const meta = parseAssignmentState(row.estado);
+      if (meta.asignacionOrdenCuadrillaId == null || meta.empleadoId == null) continue;
+      map.set(`${meta.asignacionOrdenCuadrillaId}:${meta.empleadoId}`, row);
     }
-    return match;
+    return map;
+  }
+
+  private async enrichRows(rows: any[]) {
+    const [aocs, orders, cuadrillas, miembrosAll, reviewStats] = await Promise.all([
+      this.orderAssignmentRepo.findAll({ where: { fechaEliminacion: IsNull() } as any }),
+      this.ordenRepo.findAll({ where: { fechaEliminacion: IsNull() } as any }),
+      this.cuadrillaRepo.findAll({ where: { deletedAt: IsNull() } as any }),
+      this.miembroRepo.findAll(),
+      this.getReviewStats(),
+    ]);
+
+    const aocMap = new Map(aocs.map((item: any) => [Number(item.id), item]));
+    const orderMap = new Map(orders.map((item: any) => [Number(item.id), item]));
+    const cuadrillaMap = new Map(cuadrillas.map((item: any) => [Number(item.id), item]));
+    const memberMap = new Map(
+      miembrosAll.map((item: any) => [Number(item.empleadoId), item]),
+    );
+
+    return rows.map((row: any) => {
+      const meta = parseAssignmentState(row.estado);
+      const stats = reviewStats.get(Number(row.id)) ?? { approved: 0, hasReview: false, pending: 0 };
+      const aoc = meta.asignacionOrdenCuadrillaId != null ? aocMap.get(meta.asignacionOrdenCuadrillaId) : null;
+      const orden = aoc ? orderMap.get(Number(aoc.ordenTrabajoId)) : null;
+      const cuadrilla = aoc ? cuadrillaMap.get(Number(aoc.cuadrillaId)) : row.cuadrillaId;
+      const miembro = meta.empleadoId != null ? memberMap.get(meta.empleadoId) : null;
+      const modalidad = normalizeState(orden?.modalidad ?? "DESTAJO");
+      const estado = normalizeState(meta.estadoBase || row.estado);
+      const cantidadReferencia = Number(aoc?.cantidadAsignada ?? 0);
+
+      return {
+        ...row,
+        estado,
+        estadoRaw: row.estado,
+        empleadoId: meta.empleadoId,
+        empleadoNombre: getEmployeeFullName(miembro?.empleado),
+        asignacionOrdenCuadrillaId: meta.asignacionOrdenCuadrillaId,
+        ordenTrabajoId: aoc?.ordenTrabajoId ?? null,
+        orden,
+        modalidad,
+        cantidadAsignadaCuadrilla: cantidadReferencia,
+        cantidadReferencia,
+        cantidadAprobadaAcumulada: stats.approved,
+        reportesPendientes: stats.pending,
+        cantidadPendiente: Math.max(cantidadReferencia - stats.approved, 0),
+        puedeEditar: !stats.hasReview,
+        cuadrilla: cuadrilla
+          ? {
+              id: Number(cuadrilla.id ?? cuadrilla.cuadrillaId),
+              nombre: cuadrilla.nombre,
+              codigoCuadrilla: cuadrilla.codigoCuadrilla ?? null,
+            }
+          : null,
+      };
+    });
+  }
+
+async getPanels() {
+  const [aocs, orders, cuadrillas, rows, reviewStats] = await Promise.all([
+    this.orderAssignmentRepo.findAll({
+      where: { fechaEliminacion: IsNull() } as any,
+      order: { id: "DESC" as any },
+    }),
+    this.ordenRepo.findAll({ where: { fechaEliminacion: IsNull() } as any }),
+    this.cuadrillaRepo.findAll({ where: { deletedAt: IsNull() } as any }),
+    this.getActiveRawRows(),
+    this.getReviewStats(),
+  ]);
+
+  const orderMap = new Map(orders.map((item: any) => [Number(item.id), item]));
+  const cuadrillaMap = new Map(cuadrillas.map((item: any) => [Number(item.id), item]));
+  const assignmentMap = this.buildAssignmentMap(rows);
+
+  return Promise.all(
+    aocs.map(async (aoc: any) => {
+      const orden = orderMap.get(Number(aoc.ordenTrabajoId)) ?? null;
+      const cuadrilla = cuadrillaMap.get(Number(aoc.cuadrillaId)) ?? null;
+      const miembros = await this.getMiembrosActivos(Number(aoc.cuadrillaId));
+      const existingAssignments = miembros
+        .map((miembro) => assignmentMap.get(`${aoc.id}:${miembro.empleadoId}`))
+        .filter(Boolean)
+        .map((row: any) => {
+          const stats = reviewStats.get(Number(row.id)) ?? { approved: 0, hasReview: false, pending: 0 };
+          const meta = parseAssignmentState(row.estado);
+          return {
+            ...row,
+            estado: normalizeState(meta.estadoBase || row.estado),
+            estadoRaw: row.estado,
+            empleadoId: meta.empleadoId,
+            empleadoNombre: miembros.find((m) => m.empleadoId === meta.empleadoId)?.empleadoNombre ?? "Empleado sin nombre",
+            asignacionOrdenCuadrillaId: meta.asignacionOrdenCuadrillaId,
+            ordenTrabajoId: aoc.ordenTrabajoId,
+            modalidad: normalizeState(orden?.modalidad ?? "DESTAJO"),
+            cantidadAprobadaAcumulada: stats.approved,
+            reportesPendientes: stats.pending,
+            puedeEditar: !stats.hasReview,
+            cuadrilla,
+          };
+        });
+
+      const activeAssignments = existingAssignments.filter((item: any) =>
+        VALID_ASSIGNMENT_STATES.has(normalizeState(item.estado)),
+      );
+      const assignedEmployeeIds = new Set(activeAssignments.map((item: any) => Number(item.empleadoId)));
+      const missingMembers = miembros.filter((miembro) => !assignedEmployeeIds.has(miembro.empleadoId));
+      const modalidad = normalizeState(orden?.modalidad ?? "DESTAJO");
+      const ordenHabilitada = orden ? VALID_ORDER_STATES.has(normalizeState(orden.estado)) : false;
+      const blockedReason = !orden
+        ? "La orden asociada no existe."
+        : !ordenHabilitada
+          ? "La orden debe estar EN_PROCESO/ACTIVA para sincronizar empleados."
+          : null;
+
+      return {
+        id: Number(aoc.id),
+        estado: normalizeState(aoc.estado),
+        cantidadAsignada: Number(aoc.cantidadAsignada ?? 0),
+        modalidad,
+        orden,
+        cuadrilla,
+        miembros,
+        miembrosActivos: miembros.length,
+        assignedTotal: activeAssignments.length,
+        remaining: missingMembers.length,
+        missingMembers,
+        allowEdit: !blockedReason,
+        ordenHabilitada,
+        blockedReason,
+        pagoUnitario: Number(orden?.pagoUnitario ?? 0),
+        existingAssignments,
+        autoDistribution: miembros.map((miembro) => ({ empleadoId: miembro.empleadoId, metaIndividual: 0 })),
+        requiereRegistroDias: modalidad === "PAGO_POR_DIAS",
+        requiereRevisionProduccion: modalidad === "DESTAJO",
+      };
+    }),
+  );
+}
+  /**
+   * La modalidad ya NO se registra desde este módulo.
+   * La orden de trabajo conserva la responsabilidad de definir si es DESTAJO o PAGO_POR_DIAS.
+   */
+  async setPaymentModality(_dto: SetPaymentModalityDtoType, _role?: string | string[] | null) {
+    throw new BadRequestError(
+      "La modalidad se define en Órdenes de Trabajo. Este módulo solo sincroniza empleados de la cuadrilla.",
+    );
   }
 
   async distribute(dto: DistributeEmployeeAssignmentsDtoType) {
-    const base = await this.getOrderAssignmentOrFail(dto.asignacionOrdenCuadrillaId);
-    const miembros = await this.getMiembrosActivos(base.aoc.cuadrillaId);
-    const metas = dto.modo === "AUTOMATICA"
-      ? this.calculateAutoDistribution(base.aoc.cantidadAsignada, miembros).map((item) => ({
-          empleadoId: item.empleadoId,
-          metaIndividual: item.metaIndividual,
-        }))
-      : dto.metas.map((item) => ({
-          empleadoId: item.empleadoId,
-          metaIndividual: Number(item.metaIndividual),
-        }));
+    const { aoc, orden } = await this.getOrderAssignmentOrFail(dto.asignacionOrdenCuadrillaId);
+    const orderState = normalizeState(orden.estado);
+    if (!VALID_ORDER_STATES.has(orderState)) {
+      throw new BadRequestError("La orden debe estar EN_PROCESO o ACTIVA para sincronizar empleados.");
+    }
 
-    const validated = await this.validateDistribution(dto.asignacionOrdenCuadrillaId, metas, {
-      allowReplace: true,
+    const miembros = await this.getMiembrosActivos(Number(aoc.cuadrillaId));
+    if (miembros.length === 0) {
+      throw new BadRequestError("La cuadrilla no tiene miembros activos para asignar.");
+    }
+
+    const rows = await this.getActiveRawRows();
+    const existingMap = this.buildAssignmentMap(rows);
+    const activeEmployeeIds = new Set(miembros.map((m) => m.empleadoId));
+    const saved: any[] = [];
+
+    for (const miembro of miembros) {
+      const key = `${aoc.id}:${miembro.empleadoId}`;
+      const existing = existingMap.get(key);
+      const estado = encodeAssignmentState("ACTIVA", Number(aoc.id), miembro.empleadoId);
+
+      if (existing) {
+        const updated = await this.repo.update(existing.id, {
+          metaIndividual: 0,
+          estado,
+          cuadrillaId: { id: aoc.cuadrillaId } as any,
+        } as any);
+        if (updated) saved.push(updated);
+      } else {
+        const created = await this.repo.save(
+          this.repo.create({
+            metaIndividual: 0,
+            estado,
+            cuadrillaId: { id: aoc.cuadrillaId } as any,
+          }),
+        );
+        saved.push(created);
+      }
+    }
+
+    const rowsForAoc = rows.filter((row: any) => {
+      const meta = parseAssignmentState(row.estado);
+      return meta.asignacionOrdenCuadrillaId === Number(aoc.id);
     });
 
-    if (validated.existing.length > 0) {
-      await Promise.all(
-        validated.existing.map((item) =>
-          this.repo.update(item.id, { fecha_eliminacion: new Date() } as any),
-        ),
-      );
-    }
-
-    const created = [] as number[];
-
-    for (const meta of metas) {
-      const saved = await this.repo.save(
-        this.repo.create({
-          metaIndividual: meta.metaIndividual,
-          estado: encodeAssignmentState("ACTIVA", validated.aoc.id, meta.empleadoId),
-          cuadrillaId: { id: validated.aoc.cuadrillaId } as any,
+    await Promise.all(
+      rowsForAoc
+        .filter((row: any) => {
+          const meta = parseAssignmentState(row.estado);
+          return meta.empleadoId != null && !activeEmployeeIds.has(meta.empleadoId);
+        })
+        .map((row: any) => {
+          const meta = parseAssignmentState(row.estado);
+          return this.repo.update(row.id, {
+            estado: encodeAssignmentState("INACTIVA", Number(aoc.id), meta.empleadoId),
+          } as any);
         }),
-      );
-      created.push(saved.id);
+    );
+
+    return {
+      asignacionOrdenCuadrillaId: Number(aoc.id),
+      modalidad: normalizeState(orden.modalidad ?? "DESTAJO"),
+      empleadosSincronizados: saved.length,
+      mensaje:
+        normalizeState(orden.modalidad) === "PAGO_POR_DIAS"
+          ? "Empleados sincronizados. El registro y pago de días se mantiene en Gestión de Días."
+          : "Empleados sincronizados para reportes y revisión de producción por destajo.",
+    };
+  }
+
+  async getById(id: number) {
+    const row = await this.repo.findOne({
+      where: { id, fecha_eliminacion: IsNull() } as any,
+      relations: { cuadrillaId: true } as any,
+    });
+
+    if (!row) {
+      throw new NotFoundError("Asignación de empleado no encontrada");
     }
 
-    const assignments = await this.buildEnrichedAssignments();
-    return assignments.filter((item) => created.includes(item.id));
+    const [enriched] = await this.enrichRows([row]);
+    return enriched;
   }
 
   async create(dto: CreateEmployeeAssignmentDtoType) {
     const newAssignment = this.repo.create({
-      metaIndividual: dto.metaIndividual,
-      estado: normalizeState(dto.estado),
+      metaIndividual: dto.metaIndividual ?? 0,
+      estado: normalizeState(dto.estado ?? "ACTIVA"),
       cuadrillaId: { id: dto.cuadrillaId } as any,
     });
 
@@ -365,23 +354,10 @@ export class EmployeeAssignmentService {
   }
 
   async update(id: number, dto: UpdateEmployeeAssignmentDtoType) {
-    const current = await this.getRawById(id);
-    const meta = parseAssignmentState(current.estado);
-    const { hasAnyReview } = await this.getReviewData();
-
-    if (hasAnyReview.has(id)) {
-      throw new BadRequestError("Esta meta ya tiene producción/revisión registrada y no se puede editar.");
-    }
-
+    await this.getById(id);
     await this.repo.update(id, {
       ...(dto.metaIndividual !== undefined && { metaIndividual: dto.metaIndividual }),
-      ...(dto.estado !== undefined && {
-        estado: encodeAssignmentState(
-          dto.estado,
-          meta.asignacionOrdenCuadrillaId,
-          meta.empleadoId,
-        ),
-      }),
+      ...(dto.estado !== undefined && { estado: normalizeState(dto.estado) }),
       ...(dto.cuadrillaId !== undefined && { cuadrillaId: { id: dto.cuadrillaId } as any }),
     } as any);
 
@@ -389,11 +365,15 @@ export class EmployeeAssignmentService {
   }
 
   async remove(id: number) {
-    await this.getRawById(id);
-    return this.repo.update(id, { fecha_eliminacion: new Date() } as any);
+    const current = await this.getById(id);
+    const estado = current.asignacionOrdenCuadrillaId && current.empleadoId
+      ? encodeAssignmentState("INACTIVA", current.asignacionOrdenCuadrillaId, current.empleadoId)
+      : "INACTIVA";
+    return this.repo.update(id, { estado } as any);
   }
 
   async getAll() {
-    return this.buildEnrichedAssignments();
+    const rows = await this.getActiveRawRows();
+    return this.enrichRows(rows);
   }
 }

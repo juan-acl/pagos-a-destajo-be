@@ -1,4 +1,4 @@
-import { NotFoundError } from "../../error/customErrors";
+import { AlreadyExistsError, NotFoundError } from "../../error/customErrors";
 import { AreaRepository } from "../../repository/area.repository";
 import { CreateAreaDtoType, UpdateAreaDtoType } from "./area.dto";
 
@@ -12,8 +12,9 @@ export class AreaService {
   }
 
   async create(dto: CreateAreaDtoType) {
-    const exists = await this.repo.findByName(dto.nombre);
-    if (exists) throw new Error("El area ya está registrado");
+    const exists = await this.repo.findByCodigoArea(dto.codigoArea);
+    console.log("existe el area", exists);
+    if (exists) throw new AlreadyExistsError("El area ya está registrado");
 
     const newArea = this.repo.create({
       nombre: dto.nombre,
