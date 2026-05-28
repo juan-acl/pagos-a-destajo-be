@@ -7,6 +7,7 @@ export const CreateOrdenTrabajoDto = z.object({
   pagoUnitario: z.number().positive(),
   fechaLimite: z.string().nullable().optional(),
   estado: z.string().max(50).optional(),
+  modalidad: z.enum(["DESTAJO", "PAGO_POR_DIAS"]).optional().default("DESTAJO"),
 });
 
 export const UpdateOrdenTrabajoDto = CreateOrdenTrabajoDto.partial();

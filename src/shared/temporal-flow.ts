@@ -12,6 +12,8 @@ export type AssignmentStateMeta = {
 
 const AOC_PREFIX = "AOC:";
 const EMP_PREFIX = "EMP:";
+const AOC_PREFIX_LEGACY = "AOC=";
+const EMP_PREFIX_LEGACY = "EMP=";
 
 export function normalizeState(value?: string | null) {
   return String(value ?? "").trim().toUpperCase();
@@ -46,12 +48,14 @@ export function parseAssignmentState(value?: string | null): AssignmentStateMeta
 
   for (const part of parts.slice(1)) {
     const upper = normalizeState(part);
-    if (upper.startsWith(AOC_PREFIX)) {
-      const value = Number(part.slice(AOC_PREFIX.length));
+    if (upper.startsWith(AOC_PREFIX) || upper.startsWith(AOC_PREFIX_LEGACY)) {
+      const separator = part.includes(":") ? ":" : "=";
+      const value = Number(part.split(separator)[1]);
       asignacionOrdenCuadrillaId = Number.isFinite(value) ? value : null;
     }
-    if (upper.startsWith(EMP_PREFIX)) {
-      const value = Number(part.slice(EMP_PREFIX.length));
+    if (upper.startsWith(EMP_PREFIX) || upper.startsWith(EMP_PREFIX_LEGACY)) {
+      const separator = part.includes(":") ? ":" : "=";
+      const value = Number(part.split(separator)[1]);
       empleadoId = Number.isFinite(value) ? value : null;
     }
   }
@@ -112,7 +116,7 @@ export function enrichAssignment(
   };
 }
 
- export function enrichReview(
+export function enrichReview(
   review: RevisionProduccion,
   options?: {
     assignment?: ReturnType<typeof enrichAssignment> | null;

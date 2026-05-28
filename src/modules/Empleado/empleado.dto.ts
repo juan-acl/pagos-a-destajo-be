@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const LoginEmpleadoDto = z.object({
+  email: z.string().email().max(150),
+  password: z.string().min(1).max(255),
+});
+
 export const CreateEmpleadoDto = z.object({
   primerNombre: z.string().min(1).max(100),
   segundoNombre: z.string().max(100).nullable().optional(),
@@ -17,11 +22,6 @@ export const UpdateEmpleadoDto = CreateEmpleadoDto.partial().extend({
   codigoEmpleado: z.undefined(),
 });
 
-export const LoginDto = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
+export type LoginEmpleadoDtoType = z.infer<typeof LoginEmpleadoDto>;
 export type CreateEmpleadoDtoType = z.infer<typeof CreateEmpleadoDto>;
 export type UpdateEmpleadoDtoType = z.infer<typeof UpdateEmpleadoDto>;
-export type LoginDtoType = z.infer<typeof LoginDto>;

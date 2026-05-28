@@ -14,5 +14,12 @@ export class AreaRepository extends BaseRepository<Area> {
       },
     });
   }
+
+  findByCodigoArea(codigoArea: string) {
+    return this.repo.findOne({
+      where: {
+        codigoArea,
+      },
+    });
+  }
 }
- 

@@ -1,9 +1,9 @@
 import { NotFoundError } from "../../error/customErrors";
 import { EmpleadoRepository } from "../../repository/empleado.repository";
-import { CreateEmpleadoDtoType, UpdateEmpleadoDtoType, LoginDtoType } from "./empleado.dto";
+import { CreateEmpleadoDtoType, LoginEmpleadoDtoType, UpdateEmpleadoDtoType } from "./empleado.dto";
 
 export class EmpleadoService {
-  private readonly repo = new EmpleadoRepository();
+    private readonly repo = new EmpleadoRepository();
 
   async getAll() {
     return this.repo.findAll();
@@ -15,7 +15,7 @@ export class EmpleadoService {
     return empleado;
   }
 
-  async login(dto: LoginDtoType) {
+  async login(dto: LoginEmpleadoDtoType) {
     const empleado = await this.repo.findByEmail(dto.email);
     if (!empleado) throw new NotFoundError("Credenciales incorrectas");
     if (empleado.password !== dto.password) throw new Error("Credenciales incorrectas");
@@ -62,25 +62,84 @@ export class EmpleadoService {
     });
   }
 
-  async getPanelEmpleado(empleadoId: number) {
-    const miembro = await this.repo.findMiembroCuadrilla(empleadoId);
-    if (!miembro) return { miembro: null, asignacion: null, ultimoReporte: null, historial: [], pagos: [], yaReporto: false };
+  async remove(id: number) {
+    await this.getById(id);
+    return this.repo.update(id, { estado: "INACTIVO" });
+  }
 
-    const asignacion = await this.repo.findAsignacionByCuadrilla(miembro.cuadrillaId);
+  async getPanelEmpleado(empleadoId: number): Promise<any> {
+    const miembro = await this.repo.findMiembroCuadrilla(empleadoId);
+    if (!miembro) return {
+      miembro: null, asignacionOrden: null, ordenTrabajo: null,
+      ultimoReporte: null, historial: [], pagos: [], yaReporto: false
+    };
+
+    const asignacionOrden = await this.repo.findOrdenActiva(miembro.cuadrillaId);
+    if (!asignacionOrden) return {
+      miembro, asignacionOrden: null, ordenTrabajo: null,
+      ultimoReporte: null, historial: [], pagos: [], yaReporto: false
+    };
+
+    const ordenTrabajo = await this.repo.findOrdenTrabajo(asignacionOrden.ordenTrabajoId);
+
+    const estadoOrden = String(ordenTrabajo?.estado ?? "").toUpperCase();
+    const modalidadOrden = String(ordenTrabajo?.modalidad ?? "").toUpperCase();
+
+    if (!ordenTrabajo || !["EN_PROCESO", "ACTIVO"].includes(estadoOrden) || modalidadOrden !== "DESTAJO") {
+      return {
+        miembro, asignacionOrden, ordenTrabajo,
+        ultimoReporte: null, historial: [], pagos: [], yaReporto: false,
+        ordenInvalida: true
+      };
+    }
 
     const [ultimoReporte, historial, pagos] = await Promise.all([
-      asignacion ? this.repo.findUltimoReporte(asignacion.id) : null,
-      asignacion ? this.repo.findHistorialReportes(asignacion.id) : [],
+      this.repo.findUltimoReporte(asignacionOrden.id, empleadoId, miembro.cuadrillaId),
+      this.repo.findHistorialReportes(asignacionOrden.id, empleadoId, miembro.cuadrillaId),
       this.repo.findPagosEmpleado(empleadoId),
     ]);
 
     const yaReporto = ultimoReporte?.estadoRevision === "PENDIENTE_REVISION";
 
-    return { miembro, asignacion, ultimoReporte, historial, pagos, yaReporto };
+    return { miembro, asignacionOrden, ordenTrabajo, ultimoReporte, historial, pagos, yaReporto };
   }
 
-  async remove(id: number) {
-    await this.getById(id);
-    return this.repo.update(id, { estado: "INACTIVO" });
+  async createReporteOperario(empleadoId: number, cantidadRecibida: number): Promise<any> {
+    if (!cantidadRecibida || cantidadRecibida <= 0) {
+      throw new Error("La cantidad debe ser mayor a cero.");
+    }
+
+    if (cantidadRecibida > 9999) {
+      throw new Error("La cantidad parece incorrecta. Verifica el dato ingresado.");
+    }
+
+    const miembro = await this.repo.findMiembroCuadrilla(empleadoId);
+    if (!miembro) throw new Error("El empleado no pertenece a ninguna cuadrilla activa.");
+
+    const asignacionOrden = await this.repo.findOrdenActiva(miembro.cuadrillaId);
+    if (!asignacionOrden) throw new Error("No tienes una orden activa asignada.");
+
+    const ordenTrabajo = await this.repo.findOrdenTrabajo(asignacionOrden.ordenTrabajoId);
+    if (!ordenTrabajo) throw new Error("Orden de trabajo no encontrada.");
+
+    const estadoOrden = String(ordenTrabajo.estado ?? "").toUpperCase();
+    const modalidadOrden = String(ordenTrabajo.modalidad ?? "").toUpperCase();
+
+    if (!["EN_PROCESO", "ACTIVO"].includes(estadoOrden)) {
+      throw new Error("La orden no está en proceso. No puedes reportar en este momento.");
+    }
+
+    if (modalidadOrden !== "DESTAJO") {
+      throw new Error("Esta orden no es de modalidad DESTAJO.");
+    }
+    return this.repo.createReporteOperario({
+      cantidadRecibida,
+      cantidadAprobada: 0,
+      estadoRevision: "PENDIENTE_REVISION",
+      fechaRevision: new Date(),
+      cuadrillaId: miembro.cuadrillaId,
+      empleadoId,
+      asignacionOrdenId: asignacionOrden.id,
+    });
   }
 }
