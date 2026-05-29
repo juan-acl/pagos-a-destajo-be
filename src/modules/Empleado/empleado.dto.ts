@@ -19,6 +19,7 @@ export const CreateEmpleadoDto = z.object({
 
 export const UpdateEmpleadoDto = CreateEmpleadoDto.partial().extend({
   password: z.string().min(6).max(255).optional().or(z.literal("")),
+  codigoEmpleado: z.undefined(),
 });
 
 export type LoginEmpleadoDtoType = z.infer<typeof LoginEmpleadoDto>;

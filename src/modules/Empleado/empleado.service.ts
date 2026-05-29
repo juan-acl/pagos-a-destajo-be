@@ -27,6 +27,13 @@ export class EmpleadoService {
   async create(dto: CreateEmpleadoDtoType) {
     const existe = await this.repo.findByEmail(dto.email);
     if (existe) throw new Error("El email ya está registrado");
+
+    const fecha = new Date();
+    const fechaStr = fecha.toISOString().slice(0, 10).replace(/-/g, "");
+    const empleados = await this.repo.findAll();
+    const correlativo = String(empleados.length + 1).padStart(3, "0");
+    const codigoEmpleado = `EMP-${fechaStr}-${correlativo}`;
+
     const nuevo = this.repo.create({
       primerNombre: dto.primerNombre,
       segundoNombre: dto.segundoNombre ?? null,
@@ -34,7 +41,7 @@ export class EmpleadoService {
       segundoApellido: dto.segundoApellido ?? null,
       email: dto.email,
       password: dto.password,
-      codigoEmpleado: dto.codigoEmpleado ?? null,
+      codigoEmpleado,
       pstPuesto: dto.pstPuesto ?? null,
       estado: dto.estado ?? "ACTIVO",
     });
@@ -50,7 +57,6 @@ export class EmpleadoService {
       ...(dto.segundoApellido !== undefined && { segundoApellido: dto.segundoApellido }),
       ...(dto.email !== undefined && { email: dto.email }),
       ...(dto.password !== undefined && dto.password !== "" && { password: dto.password }),
-      ...(dto.codigoEmpleado !== undefined && { codigoEmpleado: dto.codigoEmpleado }),
       ...(dto.pstPuesto !== undefined && { pstPuesto: dto.pstPuesto }),
       ...(dto.estado !== undefined && { estado: dto.estado }),
     });
