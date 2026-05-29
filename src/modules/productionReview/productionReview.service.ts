@@ -12,7 +12,7 @@ import {
   getRejectionPercentage,
   normalizeState,
 } from "../../shared/temporal-flow";
-import { AsignacionEmpleadoRepository } from "../../repository/employeeAssignment.repository";
+import { EmployeeAssignmentRepository } from "../../repository/employeeAssignment.repository";
 import { AsignacionOrdenCuadrillaRepository } from "../../repository/asignacion-orden-cuadrilla.repository";
 import { OrdenTrabajoRepository } from "../../repository/orden-trabajo.repository";
 
@@ -21,7 +21,7 @@ const VALID_ORDER_STATES = new Set(["EN_PROCESO", "ACTIVA", "ACTIVO"]);
 export class ProductionReviewService {
   private readonly repo = new RevisionProduccionRepository();
   private readonly assignmentService = new EmployeeAssignmentService();
-  private readonly assignmentRepo = new AsignacionEmpleadoRepository();
+  private readonly assignmentRepo = new EmployeeAssignmentRepository();
   private readonly orderAssignmentRepo = new AsignacionOrdenCuadrillaRepository();
   private readonly ordenRepo = new OrdenTrabajoRepository();
 
